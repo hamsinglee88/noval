@@ -1,9 +1,12 @@
 import { defineStore } from 'pinia';
+import CryptoJS from 'crypto-js';
+import type { AxiosError } from 'axios';
 
 import { authApi, setSessionToken } from '@/services/api';
 import type { AuthPayload, AuthUser } from '@/types/auth';
 
 const storageKey = 'noval-auth-session';
+const SECRET_KEY = import.meta.env.VITE_SESSION_SECRET || 'noval-dev-secret';
 
 interface PersistedSession {
   token: string;
@@ -50,7 +53,9 @@ export const useAuthStore = defineStore('auth', {
         expiresAt: this.expiresAt,
         route: this.landingRoute,
       };
-      localStorage.setItem(storageKey, JSON.stringify(session));
+      // 使用 AES 加密存储 session
+      const encrypted = CryptoJS.AES.encrypt(JSON.stringify(session), SECRET_KEY).toString();
+      localStorage.setItem(storageKey, encrypted);
     },
     clearSession() {
       this.user = null;
@@ -71,7 +76,22 @@ export const useAuthStore = defineStore('auth', {
         return;
       }
 
-      const session = JSON.parse(raw) as PersistedSession;
+      let session: PersistedSession;
+      try {
+        // 解密 session 数据
+        const bytes = CryptoJS.AES.decrypt(raw, SECRET_KEY);
+        const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+        if (!decrypted) {
+          this.clearSession();
+          return;
+        }
+        session = JSON.parse(decrypted) as PersistedSession;
+      } catch (e) {
+        // 解密或解析失败，清除无效数据
+        this.clearSession();
+        return;
+      }
+
       this.token = session.token;
       this.expiresAt = session.expiresAt;
       this.landingRoute = session.route ?? '/projects';
@@ -82,8 +102,13 @@ export const useAuthStore = defineStore('auth', {
         this.user = payload.user;
         this.expiresAt = payload.session.expires_at;
         this.persistSession();
-      } catch {
-        this.clearSession();
+      } catch (error) {
+        // 仅在 401/403 时清除 session，网络错误保留当前状态
+        const axiosError = error as AxiosError<{ error?: { code?: string } }>;
+        const status = axiosError.response?.status;
+        if (status === 401 || status === 403) {
+          this.clearSession();
+        }
       }
     },
     async register(payload: { username: string; password: string }) {

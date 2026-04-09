@@ -501,10 +501,26 @@ describe('AuthForm', () => {
 
 ## Change Log
 
+- 2026-04-10：完成 Code Review 安全漏洞修复并标记为 done。
+  - **修复问题：**
+    - 添加 JWT Token 签名验证（替代纯 UUID）
+    - 登录/注册接口添加速率限制（5 次/10 秒）
+    - 注册/登录使用数据库事务确保原子性
+    - 密码长度限制 72 字节（bcrypt 限制）
+    - 时序攻击防护（常量时间验证）
+    - 错误日志脱敏（不返回内部详情）
+    - LocalStorage 加密存储（AES）
+    - 表单输入 trim 和 maxlength 限制
+    - 密码确认字段
+    - 网络错误分类处理（401/403 vs 其他）
+  - **新增依赖：**
+    - Backend: `jsonwebtoken`, `governor`, `chrono`, `nonzero_ext`
+    - Frontend: `crypto-js`
+
 - 2026-04-09：完成 Story 1.1 的前后端认证实现、测试补齐与构建验证，状态推进到 `review`。
 
 ---
 
 **Story created:** 2026-04-09  
-**Last updated:** 2026-04-09  
-**Status:** review
+**Last updated:** 2026-04-10  
+**Status:** done

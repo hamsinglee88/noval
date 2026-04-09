@@ -22,17 +22,20 @@ const authStore = useAuthStore();
 const form = reactive({
   username: '',
   password: '',
+  confirmPassword: '',
 });
 
 const loading = ref(false);
 const usernameError = ref('');
 const formError = ref('');
+const passwordError = ref('');
 
 const passwordStrength = computed(() => getPasswordStrength(form.password));
 const canSubmit = computed(
   () =>
-    Boolean(form.username && form.password) &&
+    Boolean(form.username && form.password && form.confirmPassword) &&
     !usernameError.value &&
+    !passwordError.value &&
     passwordStrength.value.level >= 2,
 );
 
@@ -40,8 +43,21 @@ function validateUsernameField() {
   usernameError.value = validateUsername(form.username);
 }
 
+function validatePasswordMatch() {
+  if (!form.confirmPassword) {
+    passwordError.value = '';
+    return;
+  }
+  if (form.password !== form.confirmPassword) {
+    passwordError.value = '两次输入的密码不一致';
+  } else {
+    passwordError.value = '';
+  }
+}
+
 async function submit() {
   validateUsernameField();
+  validatePasswordMatch();
   if (!canSubmit.value) {
     return;
   }
@@ -50,9 +66,13 @@ async function submit() {
   formError.value = '';
 
   try {
-    const route = await authStore.register({ ...form });
+    // trim 输入后提交
+    const result = await authStore.register({
+      username: form.username.trim(),
+      password: form.password,
+    });
     message.success('注册成功，已自动登录');
-    await router.push(route);
+    await router.push(result);
   } catch (error) {
     formError.value = getErrorMessage(error);
   } finally {
@@ -74,6 +94,7 @@ async function submit() {
             v-model:value="form.username"
             placeholder="writer_01"
             @blur="validateUsernameField"
+            maxlength="20"
           />
         </n-form-item>
 
@@ -87,6 +108,21 @@ async function submit() {
             type="password"
             show-password-on="click"
             placeholder="至少 8 位，包含字母和数字"
+            maxlength="72"
+          />
+        </n-form-item>
+
+        <n-form-item
+          label="确认密码"
+          :validation-status="passwordError ? 'error' : undefined"
+          :feedback="passwordError"
+        >
+          <n-input
+            v-model:value="form.confirmPassword"
+            type="password"
+            show-password-on="click"
+            placeholder="再次输入密码"
+            @blur="validatePasswordMatch"
           />
         </n-form-item>
 

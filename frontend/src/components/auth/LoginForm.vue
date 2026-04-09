@@ -44,9 +44,13 @@ async function submit() {
   formError.value = '';
 
   try {
-    const route = await authStore.login({ ...form });
+    // trim 输入后提交
+    const result = await authStore.login({
+      username: form.username.trim(),
+      password: form.password,
+    });
     message.success('登录成功');
-    await router.push(route);
+    await router.push(result);
   } catch (error) {
     formError.value = getErrorMessage(error);
   } finally {
@@ -68,6 +72,7 @@ async function submit() {
             v-model:value="form.username"
             placeholder="writer_01"
             @blur="validateUsernameField"
+            maxlength="20"
           />
         </n-form-item>
 
@@ -77,6 +82,7 @@ async function submit() {
             type="password"
             show-password-on="click"
             placeholder="请输入密码"
+            maxlength="72"
           />
         </n-form-item>
 

@@ -5,6 +5,7 @@ use axum::{
 };
 use serde::Serialize;
 use thiserror::Error;
+use tracing::error;
 
 #[derive(Debug, Error)]
 pub enum AppError {
@@ -111,12 +112,16 @@ impl IntoResponse for AppError {
 
 impl From<sqlx::Error> for AppError {
     fn from(value: sqlx::Error) -> Self {
-        Self::internal(format!("database error: {value}"))
+        // 记录详细错误到日志，但不返回给客户端
+        error!("Database error: {:?}", value);
+        Self::internal("数据库操作失败，请稍后重试。")
     }
 }
 
 impl From<bcrypt::BcryptError> for AppError {
     fn from(value: bcrypt::BcryptError) -> Self {
-        Self::internal(format!("password hashing failed: {value}"))
+        // 记录详细错误到日志，但不返回给客户端
+        error!("Password hashing error: {:?}", value);
+        Self::internal("密码处理失败，请稍后重试。")
     }
 }
