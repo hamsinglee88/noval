@@ -2,135 +2,176 @@
 
 ## 项目定位
 
-这是一个面向**专业网络小说作家**的 AI 辅助创作项目，核心目标不是“写得更快”，而是**写得更好**：
+这是一个面向**专业网络小说作家**的 AI 辅助创作项目，核心目标不是"写得更快"，而是**写得更好**：
 
 - 减少 AI 味道，尽量贴近作者真实文风
 - 支持长篇小说创作中的一致性维护
 - 强化角色、情节、伏笔等长期状态管理
 - 让作家把精力集中在创意，而不是重复劳动
 
-当前仓库是一个 **greenfield 单仓库项目**，现阶段以 **BMAD 工作流、PRD、架构设计、UX 产物、Sprint 跟踪** 为主，**业务代码尚未正式进入仓库**。
+---
 
-根据现有产物，项目目标技术栈为：
+## 技术栈
 
-- **后端**：Rust
-- **前端**：Vue 3 + TypeScript
-- **架构**：前后端分离 Web 应用
-- **数据层**：SQLite + 文件系统 + 向量索引
-- **模型接入**：本地 LLM（如 Ollama）+ 云端 LLM（如 Claude）
+**后端**：Rust + Axum + SQLite + SQLx
+**前端**：Vue 3.4+ + TypeScript + Naive UI + Pinia
+**架构**：前后端分离 Web 应用
+**数据层**：SQLite + 文件系统 + 向量索引
+**模型接入**：本地 LLM（如 Ollama）+ 云端 LLM（如 Claude）
+**认证**：JWT (jsonwebtoken) + bcrypt 密码加密
 
 ---
 
 ## 仓库结构
 
-这是一个**单仓库、无 Git Submodule** 的结构：
-
 ```text
 noval/
-├── _bmad/                           ← BMAD 框架、模块、技能与工作流模板
-├── _bmad-output/                    ← 当前项目已生成的规划/实现产物
-│   ├── planning-artifacts/          ← PRD、Epic、UX 设计规格等
-│   ├── implementation-artifacts/    ← Sprint 状态、后续 Story 产物
+├── _bmad/                           ← BMAD 框架、模块、技能
+├── _bmad-output/                    ← 规划/实现产物
+│   ├── planning-artifacts/          ← PRD、Epic、UX 设计规格
+│   ├── implementation-artifacts/    ← Sprint 状态、Story 文件
 │   └── architecture-design.md       ← 系统架构设计
-├── design-artifacts/                ← 产品简报、触发地图、UX 场景、设计系统、开发资料
-├── workflow/                        ← 仓库级工作流说明
-├── docs/                            ← 预留文档目录（当前基本为空）
-└── CLAUDE.md                        ← 当前项目协作约定
+├── backend/                         ← Rust 后端
+│   ├── src/
+│   │   ├── handlers/                ← HTTP 处理器
+│   │   ├── models/                  ← 数据模型
+│   │   ├── services/                ← 业务逻辑
+│   │   └── db.rs / errors.rs / validation.rs
+│   ├── migrations/                  ← 数据库迁移
+│   └── Cargo.toml
+├── frontend/                        ← Vue 3 前端
+│   ├── src/
+│   │   ├── components/              ← 组件
+│   │   ├── views/                   ← 页面
+│   │   ├── stores/                  ← 状态管理 (Pinia)
+│   │   ├── services/                ← API 客户端
+│   │   └── router/                  ← 路由
+│   └── package.json
+├── design-artifacts/                ← 设计产物
+├── workflow/                        ← 工作流说明
+└── CLAUDE.md
 ```
 
-### 当前最重要的文档
+---
 
-- `_bmad-output/planning-artifacts/prd.md`：产品需求文档，定义项目目标、范围、用户与成功标准
-- `_bmad-output/architecture-design.md`：系统架构设计，定义模块拆分与目标技术方案
-- `_bmad-output/planning-artifacts/ux-design-specification.md`：UX 设计规格
-- `_bmad-output/implementation-artifacts/sprint-status.yaml`：Epic / Story 当前状态
+## 重要文档
+
+| 文件 | 说明 |
+|------|------|
+| `_bmad-output/planning-artifacts/prd.md` | 产品需求文档（54 个 FR + 14 个 NFR） |
+| `_bmad-output/architecture-design.md` | 系统架构设计 |
+| `_bmad-output/planning-artifacts/ux-design-specification.md` | UX 设计规格 |
+| `_bmad-output/implementation-artifacts/sprint-status.yaml` | **Sprint 状态（权威）** |
+| `workflow/story-dev-workflow.md` | Story 开发完整工作流 |
+
+---
+
+## 当前状态
+
+**Sprint 状态**：
+
+| Epic | 状态 | Story 进度 |
+|------|------|-----------|
+| Epic 1: 项目初始化与风格管理 | in-progress | 1-1 done, 1-2~1-12 ready-for-dev |
+| Epic 2: 创作编辑器核心功能 | backlog | - |
+| Epic 3: AI 辅助生成 | backlog | - |
+| Epic 4: 连贯性管理 | backlog | - |
+| Epic 5: 系统管理与统计 | backlog | - |
+
+**已完成 Story**：
+- **Story 1-1** (用户注册/登录系统) - done
+  - 后端：JWT 认证、bcrypt 密码、SQLite 用户存储
+  - 前端：登录/注册页面、Pinia 状态管理、AES 加密存储
 
 ---
 
 ## 关键规则
 
-### 1. 仓库类型判断
+### 1. 单仓库结构
 
-- **本项目默认按单仓库处理**
-- 当前仓库**没有** `backend/` 子模块，也不是父仓库 + 子模块结构
+- **本项目为单仓库**，前后端代码在同一仓库根目录下
 - 任何涉及 Story 开发、分支、工作目录的操作，默认都以**当前仓库根目录**为准
+- 后端目录：`backend/`
+- 前端目录：`frontend/`
 
-### 2. 技术栈约束
+### 2. 技术栈命令
 
-- 项目描述、实现建议、目录规划应与 **Rust 后端 + Vue 3 前端** 保持一致
-- 不要再沿用 Java / Kotlin / Gradle / `union-service-property` / H2 这类旧项目设定
-- 若后续代码入库，命令与脚本应基于实际目录和实际工具链更新，例如：
-  - Rust：`cargo fmt` / `cargo test`
-  - 前端：`pnpm dev` / `pnpm test` / `pnpm build`
+| 任务 | 后端 | 前端 |
+|------|------|------|
+| 编译检查 | `cargo check` | `npm run build` |
+| 单元测试 | `cargo test` | `npm test` |
+| 开发模式 | - | `npm run dev` |
+| 格式化 | `cargo fmt` | - |
 
-### 3. 当前阶段的工作重心
-
-- 当前阶段以**需求澄清、架构收敛、UX 设计、Story 拆分、开发流程约束**为主
-- 在没有真实代码目录前，不要假设已有后端模块、前端应用、数据库迁移或 CI 配置
-- 若用户要求“开发 Story”或“开始实现”，先根据仓库现状判断：
-  - 若只有文档产物，则先补齐 Story、实现方案、目录规划或脚手架
-  - 若未来已加入代码，再按真实代码结构执行开发
-
-### 4. Story / Sprint 跟踪
+### 3. Story / Sprint 跟踪
 
 - Sprint 跟踪文件：`_bmad-output/implementation-artifacts/sprint-status.yaml`
-- 当前 Story 状态定义：
-  - `backlog`
-  - `ready-for-dev`
-  - `in-progress`
-  - `review`
-  - `done`
-- 该文件是当前项目开发进度的权威来源
+- Story 状态：`backlog` → `ready-for-dev` → `in-progress` → `review` → `done`
+- 该文件是项目开发进度的权威来源
 
-### 5. 文档优先级
+### 4. 文档优先级
 
-当文档之间存在差异时，优先级建议如下：
+当文档之间存在差异时，优先级如下：
 
 1. 用户当前明确要求
 2. `_bmad-output/architecture-design.md`
 3. `_bmad-output/planning-artifacts/prd.md`
 4. `_bmad-output/planning-artifacts/ux-design-specification.md`
-5. 其他设计资料与工作流说明
+5. 其他设计资料
 
 ---
 
 ## 工作流命令
 
-工作流文件位于 `workflow/` 目录，供 AI Agent 按步骤执行。
-
 ### dev-story — 开发 Story
 
-**触发**：用户说 `start story` 或 `开发 story`，后跟 Story 编号（如 `2-4`）
+**触发**：用户说 `start story {编号}` 或 `开发 story {编号}`（如 `start story 1-2`）
 
-执行步骤：
+**执行**：读取 `workflow/story-dev-workflow.md`，按步骤执行：
 
-- **默认读取** `workflow/story-dev-workflow-single-repo.md`
-- 只有当仓库未来真的演变为“父仓库 + `backend` 子模块”时，才改读 `workflow/story-dev-workflow.md`
-
-补充说明：
-
-- 当前单仓库工作流是**正确入口**
-- 其中若出现与当前项目不符的示例命令，应以本项目真实技术栈为准进行替换
-- 在业务代码尚未入库前，Story 开发更多是创建 Story、细化方案、准备脚手架，而不是直接进入完整编码阶段
+1. 同步代码 & 创建分支
+2. 创建 Story 文件（如尚未创建）
+3. 实现功能
+4. 可选：编译验证、单元测试、代码审查
+5. 提交代码 & 推送
+6. 创建 PR
+7. 更新 Sprint 状态
 
 ### submit-questions — 登记问题
 
 **触发**：用户说 `登记问题` 或 `submit questions`
 
-执行步骤：读取 `workflow/question-submission-workflow.md`，按工作流步骤将对话中讨论的问题登记到问题清单。
+**执行**：读取 `workflow/question-submission-workflow.md`，将问题登记到 `design-artifacts/questions.md`
+
+---
+
+## Git 约定
+
+| 项目 | 规则 |
+|------|------|
+| 分支命名 | `story/{epic}-{story}-{slug}` |
+| Commit 格式 | `<type>(<scope>): <subject>` |
+| 作者 | `Hamsing <boil@vip.qq.com>` |
+| Co-Authored | `Claude Opus 4.6 <noreply@anthropic.com>` |
+| PR 目标 | `main` 或依赖分支 |
+
+---
+
+## 核心功能模块
+
+| 模块 | 说明 | 对应 Epic |
+|------|------|----------|
+| 风格管理 | 上传文本分析风格、向量化、档案存储 | Epic 1 |
+| 创作编辑器 | VS Code 风格三栏布局、章节 CRUD、自动保存 | Epic 2 |
+| AI 辅助生成 | 续写、润色、扩写、风格约束 | Epic 3 |
+| 连贯性管理 | 伏笔追踪、角色一致性、世界观检查 | Epic 4 |
+| 系统管理 | LLM 路由、统计、用户偏好 | Epic 5 |
 
 ---
 
 ## 对 AI Agent 的补充约束
 
-- 先识别当前仓库是否已有真实代码，再决定是“文档推进”还是“代码实现”
-- 所有项目描述应围绕 **Novel Agent / 长篇小说 AI 创作系统**
-- 讨论功能时，优先围绕以下核心能力展开：
-  - 风格分析与模仿
-  - 创作编辑器
-  - AI 辅助生成
-  - 伏笔追踪
-  - 角色一致性
-  - 世界观一致性
-  - LLM 路由与统计
-- 若要新增目录、脚手架或模块命名，应优先贴合 Rust + Vue 3 项目习惯，而不是旧的企业 Java 项目结构
+1. **先读 sprint-status.yaml** 了解当前进度，再决定下一步
+2. **代码改动后更新文档**：Story 状态、Change Log 同步更新
+3. **安全优先**：涉及认证、密码、Session 的代码必须遵循安全最佳实践
+4. **Rust + Vue 3 项目习惯**：不要引入 Java/Gradle 等企业级旧项目约定
