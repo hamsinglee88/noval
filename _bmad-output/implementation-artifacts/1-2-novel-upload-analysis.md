@@ -419,19 +419,27 @@ describe('StyleUploader', () => {
 
 ## Story Completion Status
 
-- [ ] 前端：风格管理页空状态与上传入口
-- [ ] 前端：TXT/EPUB 选择与格式校验
-- [ ] 前端：上传进度、预估时间、取消上传
-- [ ] 后端：`/api/styles/analyze` 路由
-- [ ] 后端：源文件写盘与路径规范
-- [ ] 后端：`style_analysis_tasks` 任务记录
-- [ ] 后端：TXT/EPUB 预处理入口
-- [ ] 测试：后端上传/校验/任务创建测试
-- [ ] 测试：前端上传组件状态测试
-- [ ] 集成：上传成功、失败、取消三条主路径验证
+- [x] 前端：风格管理页空状态与上传入口
+- [x] 前端：TXT/EPUB 选择与格式校验
+- [x] 前端：上传进度、预估时间、取消上传
+- [x] 后端：`/api/styles/analyze` 路由
+- [x] 后端：源文件写盘与路径规范
+- [x] 后端：`style_analysis_tasks` 任务记录
+- [x] 后端：TXT/EPUB 预处理入口
+- [x] 测试：后端上传/校验/任务创建测试
+- [x] 测试：前端上传组件状态测试
+- [x] 集成：上传成功、失败、取消三条主路径验证
+
+## Change Log
+
+- 2026-04-10：完成 Story 1-2 实现并标记为 done
+  - 后端：风格分析 API、文件上传服务、数据库迁移
+  - 前端：风格管理页面、上传组件、状态管理
+  - 测试：cargo test 通过，npm build 通过
+  - PR: https://github.com/hamsinglee88/noval/pull/1
 
 ---
 
 **Story created:** 2026-04-09  
-**Last updated:** 2026-04-09  
-**Status:** ready-for-dev
+**Last updated:** 2026-04-10  
+**Status:** done
