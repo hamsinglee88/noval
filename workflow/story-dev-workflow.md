@@ -1,8 +1,11 @@
-# Story 开发工作流
+# Story 开发工作流（单仓库 / 无子模块）
 
-> 单仓库、无 Git Submodule 时改用 [story-dev-workflow-single-repo.md](./story-dev-workflow-single-repo.md)。
+> 适用于 **Novel Agent** 项目：单仓库结构，前后端代码在同一仓库根目录下。
+>
+> - **后端**: Rust + Axum + SQLite
+> - **前端**: Vue 3 + TypeScript + Naive UI
 
-本文件描述从 Story 创建到合并的完整开发流程（**父仓库 + `backend` 子模块**）。AI Agent 按此流程执行 Story 开发。
+本文件描述从 Story 创建到合并的完整开发流程。
 
 ---
 
@@ -19,19 +22,23 @@ question: "请选择需要执行的可选步骤？"
 header: "可选步骤"
 multiSelect: true
 options:
-  - label: "编译验证"
-    description: "执行 gradlew compileKotlin + compileJava，开发完成后验证编译通过"
-  - label: "单元测试"
-    description: "执行 gradlew test，使用 H2 内存数据库，确保所有测试通过"
+  - label: "后端编译验证"
+    description: "执行 cargo check，开发完成后验证编译通过"
+  - label: "后端单元测试"
+    description: "执行 cargo test，确保所有测试通过"
+  - label: "前端编译验证"
+    description: "执行 npm run build，确保前端构建成功"
+  - label: "前端单元测试"
+    description: "执行 npm test，确保组件测试通过"
   - label: "代码审查"
     description: "执行 bmad-code-review，审查代码质量，根据结果修复关键问题"
   - label: "Worktree 模式"
-    description: "在 backend 子模块中用 git worktree 创建隔离工作目录，支持多 Story 并行开发互不干扰"
+    description: "用 git worktree 创建隔离工作目录，支持多 Story 并行开发互不干扰"
   - label: "以上均不需要"
     description: "跳过所有可选步骤，直接按默认流程执行"
 ```
 
-用户选择"以上均不需要"或仅选该项 → 四项可选步骤均跳过。其余选项按选中状态生效。
+用户选择"以上均不需要"或仅选该项 → 所有可选步骤均跳过。其余选项按选中状态生效。
 
 ### 第二步：确认模式（单选）
 
@@ -52,41 +59,32 @@ options:
 
 ### AI 判断规则
 
-**必须确认**：步骤 2（Story 规格）、步骤 3（实现结果）、步骤 6（审查结果，若启用）、步骤 8（PR）。
+**必须确认**：步骤 2（Story 规格）、步骤 3（实现结果）、步骤 7（审查结果，若启用）、步骤 9（PR）。
 
-**可跳过确认**：步骤 1、4、5、7、9；步骤 10 由用户决定。
+**可跳过确认**：步骤 1、4、5、6、8、10；步骤 11 由用户决定。
 
 ---
 
 ## 跨阶段上下文（权威）
 
-后端操作**只认一个目录**：`$BACKEND_ROOT`（勿在 `backend/` 主克隆与 `worktrees/...` 间混用）。
+本仓库**只认一个目录**：`$PROJECT_ROOT` = 当前仓库根（含 `.git`）。
 
 ### 会话变量（步骤 1 完成后固化并全程携带）
 
 | 变量 | 含义 |
-
 |------|------|
-
-| `BACKEND_ROOT` | 后端仓库根（含 `.git`）。普通：`backend/`；Worktree：父仓库根下 `worktrees/<BRANCH>`（例 `worktrees/story/4-5-foo`）。 |
-
-| `BACKEND_ROOT_ABS` | 上列目录的绝对路径；**跨会话接力必填**。 |
-
-| `BRANCH` | 如 `story/4-5-move-in-inspection-pc`。 |
-
+| `PROJECT_ROOT` | 仓库根目录。普通模式：当前主克隆根；Worktree 模式：旁路目录 `worktrees/<BRANCH>`（相对主克隆根为 `../worktrees/<BRANCH>`）。 |
+| `PROJECT_ROOT_ABS` | 上列目录的绝对路径；**跨会话接力必填**。 |
+| `BRANCH` | 如 `story/1-2-novel-upload`。 |
 | `WORKTREE_MODE` | `true` = worktree；`false` = 普通。 |
 
-**执行范围**：`gradlew`、`git`、`gh`、代码审查均在 `$BACKEND_ROOT`；审查与 dev 同路径。
+**执行范围**：`cargo`、`npm`、`git`、`gh`、代码审查均在 `$PROJECT_ROOT`。
 
-**接力输出**：须含 `BACKEND_ROOT_ABS`、`BRANCH`、`WORKTREE_MODE`（可选再写相对路径 `BACKEND_ROOT`）。
+**接力输出**：须含 `PROJECT_ROOT_ABS`、`BRANCH`、`WORKTREE_MODE`。
 
-### 跨会话启动词（仅两处）
+### 跨会话启动词
 
-触发与 `CLAUDE.md`「dev-story」一致：`start story` / `开发 story` + Story 编号；Agent 读本文件并按步执行。下列为接力块（粘贴到下一会话首条或附在触发句后）。
-
-**变量**：`{epic}-{story}`、`{BRANCH}`、`{BACKEND_ROOT}`、`{BACKEND_ROOT_ABS}`、`{WORKTREE_MODE}` 由会话变量填实。
-
----
+触发：`start story` / `开发 story` + Story 编号；Agent 读本文件并按步执行。
 
 **位置一** — 步骤 2 完成且本会话终止（不进入步骤 3）
 
@@ -94,31 +92,24 @@ options:
 【跨会话接力 · 继续实现 Story】
 开发 story {epic}-{story}（或 start story {epic}-{story}）
 同条消息须含：已执行步骤 1～2；下一步从步骤 3（bmad-dev-story）起，勿重复 bmad-create-story；
-BRANCH={BRANCH}；WORKTREE_MODE={WORKTREE_MODE}；BACKEND_ROOT={BACKEND_ROOT}；BACKEND_ROOT_ABS={BACKEND_ROOT_ABS}
-示例：开发 story {epic}-{story}。创建 Story 已做完；从步骤 3 继续。BACKEND_ROOT_ABS=... BRANCH=... WORKTREE_MODE=...
+BRANCH={BRANCH}；WORKTREE_MODE={WORKTREE_MODE}；PROJECT_ROOT_ABS={PROJECT_ROOT_ABS}
 ```
 
----
-
-**位置二** — 步骤 3 完成且本会话终止（未跑步骤 6，或用户结束）
+**位置二** — 步骤 3 完成且本会话终止（未跑步骤 7，或用户结束）
 
 ```
 【跨会话接力 · 仅代码审查】
 开发 story {epic}-{story}（或 start story {epic}-{story}）
-同条消息须含：已执行步骤 1～3；下一步仅在 BACKEND_ROOT_ABS 执行步骤 6（bmad-code-review）；
-BRANCH=...；WORKTREE_MODE=...；BACKEND_ROOT_ABS=...
-示例：开发 story {epic}-{story}。实现已完成；仅审查。BACKEND_ROOT_ABS=... BRANCH=... WORKTREE_MODE=...
+同条消息须含：已执行步骤 1～3；下一步仅执行步骤 7（bmad-code-review）；
+BRANCH=...；WORKTREE_MODE=...；PROJECT_ROOT_ABS=...
 ```
-
-**不输出位置二**：本会话已执行步骤 6 且未要求接力。
 
 ---
 
 ## 前置条件
 
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` 存在；Story 为 `backlog` 或 `ready-for-dev`
-
-- 已读 `_bmad-output/project-context.md`、`docs/BACKEND_CODE_STYLE.md`
+- 已读 `_bmad-output/architecture-design.md` 和项目代码规范
 
 ---
 
@@ -128,83 +119,109 @@ BRANCH=...；WORKTREE_MODE=...；BACKEND_ROOT_ABS=...
 
 > 先于步骤 2，保证 `bmad-create-story` 扫代码时在目标分支上。
 
-- 拉取（在 `backend/`）：`cd backend && git checkout main && git pull origin main`
+```bash
+git checkout main && git pull origin main
+```
 
 - 分支名：`story/{epic}-{story}-{slug}`
-
-- **基点**：查 sprint 依赖 → `gh pr list` 判断依赖 PR；已合并则基 `main`，未合并则基依赖分支（PR 目标同）
+- **基点**：查 sprint 依赖 → `gh pr list`；已合并则基 `main`，未合并则基依赖分支
 
 #### 普通模式
 
 ```bash
-git checkout -b story/1-1-xxx [基点分支]
+git checkout -b story/{epic}-{story}-{slug} [基点分支]
 ```
 
-`BACKEND_ROOT`= 父仓库下 `backend/`；`WORKTREE_MODE=false`。`BACKEND_ROOT_ABS`：`cd backend && pwd`（PowerShell：`(Get-Location).Path`）。
+`PROJECT_ROOT` = 主克隆根；`WORKTREE_MODE=false`。`PROJECT_ROOT_ABS`：`pwd`。
+
 #### Worktree 模式（启动勾选时）
+
+在主克隆根执行（与主仓库**同级**创建 `worktrees/`）：
+
 ```bash
-
-cd backend
-
-BRANCH="story/1-1-data-dictionary-management"
-
+BRANCH="story/{epic}-{story}-{slug}"
 WORKTREE_DIR="../worktrees/$BRANCH"
-
 git fetch origin
-
 git branch $BRANCH [基点分支]
-
 git worktree add "$WORKTREE_DIR" "$BRANCH"
-
 ```
-父仓库根相对路径恒为 **`worktrees/<BRANCH>`**（与 `WORKTREE_DIR` 一致）。`BACKEND_ROOT` = 该目录；`WORKTREE_MODE=true`；`BACKEND_ROOT_ABS`：`cd "$WORKTREE_DIR" && pwd`。后续勿回主克隆改同一分支。
-推送：`cd "$BACKEND_ROOT" && git push -u origin "$BRANCH"`
-清理（在 **`backend/`** 子模块根）：
+
+`PROJECT_ROOT` = `WORKTREE_DIR` 解析后的路径；`WORKTREE_MODE=true`。
+
+推送：`cd "$PROJECT_ROOT" && git push -u origin "$BRANCH"`
+
+清理（在**主克隆根**执行）：
+
 ```bash
-
-cd backend
-
-git worktree remove "../worktrees/story/1-1-xxx"
-
-git branch -d story/1-1-xxx
-
+git worktree remove "../worktrees/$BRANCH"
+git branch -d $BRANCH
 ```
+
 ### 2. 创建 Story 文件
-`backlog` 时跑 `bmad-create-story`（多在**父仓库根**写 `_bmad-output/`）；代码侧以 **`$BACKEND_ROOT` 的 `BRANCH`** 为准（见上文「跨阶段上下文」）。
+
+`backlog` 时跑 `bmad-create-story`；分支以 **`$PROJECT_ROOT` 当前 `BRANCH`** 为准。
 
 ### 3. 实现 Story
 
-在 **`$BACKEND_ROOT`** 执行 `bmad-dev-story`；遵守 `project-context.md`。
+在 **`$PROJECT_ROOT`** 执行 `bmad-dev-story`；遵守架构设计文档和技术栈约定。
 
-### 4. 编译验证（可选）
-
-启动勾选时执行，否则跳过。
-
-```bash
-cd "$BACKEND_ROOT" && ./gradlew :union-service-property:compileKotlin :union-service-property:compileJava
-```
-
-### 5. 单元测试（可选）
+### 4. 后端编译验证（可选）
 
 启动勾选时执行，否则跳过。
 
 ```bash
-cd "$BACKEND_ROOT" && ./gradlew :union-service-property:test
+cd "$PROJECT_ROOT/backend" && cargo check
 ```
 
-`application-test.yaml` + H2；测通为止。
-### 6. 代码审查（可选）
-启动勾选时执行，否则跳过。在 **`$BACKEND_ROOT`** 跑 `bmad-code-review`，按结果修必修复项。
-### 7. 提交代码
-在 **`$BACKEND_ROOT`** 提交子模块变更；父仓库若有 sprint/文档另库提交则拆分。作者 `Sue <boil@vip.qq.com>`；无 Co-Authored-By；`<type>(<scope>): <subject>`（type: feat/fix/docs/style/refactor/test/chore；scope：模块名）。
-### 8. 推送 & 创建 PR
-在 **`$BACKEND_ROOT`** 下 `git push`、`gh`（remote = 后端仓库，常为 union-platform）。
-**Issue（可选）**：`gh issue list --search "{epic}-{story} in:title" --state open --limit 20`，无则试 `in:title,body`；多条则 Web 定 `#N`。PR 正文含 **`Closes #N`**（或 `Fixes`/`Resolves`）；与 PR **同仓库** 时合并进默认分支后 GitHub 通常自动关 Issue；无 Issue 不写；跨仓库（父仓 Issue + 子模块 PR）不自动关，需手动或改 Issue 到代码仓。
+### 5. 后端单元测试（可选）
+
+启动勾选时执行，否则跳过。
+
+```bash
+cd "$PROJECT_ROOT/backend" && cargo test
+```
+
+### 6. 前端编译/测试（可选）
+
+启动勾选时执行，否则跳过。
+
+```bash
+cd "$PROJECT_ROOT/frontend" && npm install && npm run build
+cd "$PROJECT_ROOT/frontend" && npm test
+```
+
+### 7. 代码审查（可选）
+
+启动勾选时执行，否则跳过。在 **`$PROJECT_ROOT`** 跑 `bmad-code-review`，按结果修必修复项。
+
+### 8. 提交代码
+
+在 **`$PROJECT_ROOT`** 提交（代码、sprint 状态、文档均在同一仓库时可一次提交或按团队习惯拆分）。
+
+作者 `Hamsing <boil@vip.qq.com>`；推荐格式：
+
+```
+<type>(<scope>): <subject>
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+```
+
+type: `feat`/`fix`/`docs`/`style`/`refactor`/`test`/`chore`
+scope: 模块名（如 `auth`, `style-engine`, `editor`）
+
+### 9. 推送 & 创建 PR
+
+在 **`$PROJECT_ROOT`** 下 `git push`、`gh`。
+
+**Issue（可选）**：`gh issue list --search "{epic}-{story} in:title" --state open --limit 20`，无则试 `in:title,body`；多条则 Web 定 `#N`。PR 正文含 **`Closes #N`**；与 PR **同仓库** 时合并进默认分支后 GitHub 通常自动关 Issue；无 Issue 不写。
+
 **PR**：`gh pr create`；body：Summary、Test plan；有 `#N` 则 `Closes #N`。目标：`main` 或依赖分支。
-### 9. 更新 Sprint 状态
+
+### 10. 更新 Sprint 状态
+
 `_bmad-output/implementation-artifacts/sprint-status.yaml` 中该 Story → `done`。
 
-### 10. 合并 & 清理
+### 11. 合并 & 清理
 
 用户决定合并时机；合并后删分支；Worktree 清理见步骤 1。
 
@@ -213,20 +230,12 @@ cd "$BACKEND_ROOT" && ./gradlew :union-service-property:test
 ## 关键规则（速查）
 
 | 项目 | 规则 |
-
 |------|------|
-
-| Git 作者 | `Sue <boil@vip.qq.com>`，无 Co-Authored-By |
-
+| Git 作者 | `Hamsing <boil@vip.qq.com>` |
 | 分支 | `story/{epic}-{story}-{slug}` |
-
 | Commit | Conventional Commits |
-
-| 编译 / 测 / 审查 | 可选，启动勾选；编译 `:union-service-property:compileKotlin`+`compileJava`；测 `test` profile + H2 |
-
+| 后端编译 | `cargo check` / `cargo test` |
+| 前端编译 | `npm run build` / `npm test` |
 | Worktree | 可选；路径 `worktrees/<BRANCH>` |
-
 | PR | 目标 `main` 或依赖分支 |
-
-| Issue | `$BACKEND_ROOT` 下 `gh`；`Closes #N`；见步骤 8 |
-
+| Issue | `$PROJECT_ROOT` 下 `gh`；`Closes #N` |
