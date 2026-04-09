@@ -12,7 +12,7 @@ use axum::{
 };
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
-use crate::{app_state::AppState, handlers::auth};
+use crate::{app_state::AppState, handlers::{auth, styles}};
 
 pub fn create_router(state: AppState) -> Router {
     let cors = CorsLayer::new()
@@ -24,10 +24,15 @@ pub fn create_router(state: AppState) -> Router {
         ]));
 
     Router::new()
+        // Auth routes
         .route("/api/auth/register", post(auth::register))
         .route("/api/auth/login", post(auth::login))
         .route("/api/auth/logout", post(auth::logout))
         .route("/api/auth/me", get(auth::me))
+        // Style routes
+        .route("/api/styles/analyze", post(styles::analyze))
+        .route("/api/styles/analyze/{task_id}", get(styles::get_task_status))
+        .route("/api/styles/analyze/{task_id}/cancel", post(styles::cancel_task))
         .with_state(state)
         .layer(cors)
 }
