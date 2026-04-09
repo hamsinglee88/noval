@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+**/dist/
+**/build/
+*.o
+*.so
+*.dylib
+target/
+**/target/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Test coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS
+Thumbs.db
+
+# BMAD internal (keep config and output, exclude framework source)
+# _bmad/ is the skills source - typically excluded if managed externally
+# But for this project we keep it as it's part of the repo
+_bmad/_config/
+_bmad/_memory/
+
+# Rust
+**/Cargo.lock
+**/target/
