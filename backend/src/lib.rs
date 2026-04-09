@@ -33,6 +33,8 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/styles/analyze", post(styles::analyze))
         .route("/api/styles/analyze/{task_id}", get(styles::get_task_status))
         .route("/api/styles/analyze/{task_id}/cancel", post(styles::cancel_task))
+        .route("/api/styles/analyze/{task_id}/vocabulary", get(styles::get_vocabulary_result))
+        .route("/api/styles/analyze/{task_id}/sentence", get(styles::get_sentence_result))
         .with_state(state)
         .layer(cors)
 }

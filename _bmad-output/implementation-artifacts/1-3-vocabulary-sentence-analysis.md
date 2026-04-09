@@ -1,9 +1,9 @@
 ---
-status: ready-for-dev
+status: done
 epic: 1
 story: 3
 story_key: 1-3-vocabulary-sentence-analysis
-last_updated: 2026-04-09
+last_updated: 2026-04-10
 ---
 
 # Story 1.3: 词汇层和句式层特征提取
@@ -556,19 +556,29 @@ serde_json = "1.0"
 
 ## Story Completion Status
 
-- [ ] 后端：词汇层分析函数实现
-- [ ] 后端：句式层分析函数实现
-- [ ] 后端：分析结果数据模型
-- [ ] 后端：数据库迁移（添加结果存储）
-- [ ] 后端：分析进度更新逻辑
-- [ ] 后端：查询接口实现
-- [ ] 前端：分析步骤显示扩展
-- [ ] 测试：词汇分析单元测试
-- [ ] 测试：句式分析单元测试
-- [ ] 测试：集成测试（上传→分析→查询）
+- [x] 后端：词汇层分析函数实现
+- [x] 后端：句式层分析函数实现
+- [x] 后端：分析结果数据模型
+- [x] 后端：数据库迁移（添加结果存储）
+- [x] 后端：分析进度更新逻辑
+- [x] 后端：查询接口实现
+- [x] 前端：分析步骤显示扩展
+- [x] 测试：词汇分析单元测试
+- [x] 测试：句式分析单元测试
+- [x] 测试：集成测试（上传→分析→查询）
+
+## Change Log
+
+- 2026-04-10：完成 Story 1-3 实现并标记为 done
+  - 后端：词汇层分析服务（jieba-rs 分词、TTR 计算）
+  - 后端：句式层分析服务（句长统计、句式比例）
+  - 后端：分析结果存储与查询接口
+  - 后端：数据库迁移 003_add_analysis_results.sql
+  - 测试：cargo test 通过（15 个测试全部通过）
+  - 构建：npm run build 通过
 
 ---
 
 **Story created:** 2026-04-09  
-**Last updated:** 2026-04-09  
-**Status:** ready-for-dev
+**Last updated:** 2026-04-10  
+**Status:** done
