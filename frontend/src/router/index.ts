@@ -5,6 +5,7 @@ import LoginView from '@/views/LoginView.vue';
 import ProjectsView from '@/views/ProjectsView.vue';
 import RegisterView from '@/views/RegisterView.vue';
 import StyleOnboardingView from '@/views/StyleOnboardingView.vue';
+import StyleLibraryView from '@/views/StyleLibraryView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -38,6 +39,12 @@ const router = createRouter({
       path: '/style-profiles/onboarding',
       name: 'style-onboarding',
       component: StyleOnboardingView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/style-library',
+      name: 'style-library',
+      component: StyleLibraryView,
       meta: { requiresAuth: true },
     },
   ],

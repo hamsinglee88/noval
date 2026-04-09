@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-axum = { version = "0.8.6", features = ["macros"] }
+axum = { version = "0.8.6", features = ["macros", "multipart"] }
 bcrypt = "0.17.1"
 chrono = { version = "0.4", features = ["serde"] }
 http-body-util = "0.1.3"

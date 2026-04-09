@@ -25,6 +25,11 @@ pub enum AppError {
         message: String,
     },
     #[error("{message}")]
+    NotFound {
+        code: &'static str,
+        message: String,
+    },
+    #[error("{message}")]
     Internal {
         code: &'static str,
         message: String,
@@ -65,6 +70,13 @@ impl AppError {
         }
     }
 
+    pub fn not_found(code: &'static str, message: impl Into<String>) -> Self {
+        Self::NotFound {
+            code,
+            message: message.into(),
+        }
+    }
+
     pub fn internal(message: impl Into<String>) -> Self {
         Self::Internal {
             code: "INTERNAL_SERVER_ERROR",
@@ -77,6 +89,7 @@ impl AppError {
             Self::BadRequest { .. } => StatusCode::BAD_REQUEST,
             Self::Conflict { .. } => StatusCode::CONFLICT,
             Self::Unauthorized { .. } => StatusCode::UNAUTHORIZED,
+            Self::NotFound { .. } => StatusCode::NOT_FOUND,
             Self::Internal { .. } => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -86,6 +99,7 @@ impl AppError {
             Self::BadRequest { code, .. }
             | Self::Conflict { code, .. }
             | Self::Unauthorized { code, .. }
+            | Self::NotFound { code, .. }
             | Self::Internal { code, .. } => code,
         }
     }
@@ -123,5 +137,15 @@ impl From<bcrypt::BcryptError> for AppError {
         // 记录详细错误到日志，但不返回给客户端
         error!("Password hashing error: {:?}", value);
         Self::internal("密码处理失败，请稍后重试。")
+    }
+}
+
+impl From<axum::extract::multipart::MultipartError> for AppError {
+    fn from(value: axum::extract::multipart::MultipartError) -> Self {
+        error!("Multipart error: {:?}", value);
+        Self::bad_request(
+            "MULTIPART_ERROR",
+            "文件上传失败，请重试。",
+        )
     }
 }
