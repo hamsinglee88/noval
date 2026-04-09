@@ -231,7 +231,7 @@ scope: 模块名（如 `auth`, `style-engine`, `editor`）
 
 | 项目 | 规则 |
 |------|------|
-| Git 作者 | `Hamsing <boil@vip.qq.com>` |
+| Git 作者 | `Hamsing <hamsing@163.com>` |
 | 分支 | `story/{epic}-{story}-{slug}` |
 | Commit | Conventional Commits |
 | 后端编译 | `cargo check` / `cargo test` |

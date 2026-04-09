@@ -49,6 +49,9 @@ pub struct StyleAnalysisTask {
     pub error_message: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+    // Story 1.3: 词汇层和句式层分析结果
+    pub vocabulary_json: Option<String>,
+    pub sentence_json: Option<String>,
 }
 
 impl StyleAnalysisTask {

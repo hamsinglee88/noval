@@ -1,6 +1,6 @@
 use axum::{
     Json,
-    extract::{Multipart, State},
+    extract::{Multipart, State, Path},
     http::{HeaderMap, header},
 };
 use serde::Serialize;
@@ -25,16 +25,26 @@ pub struct TaskData {
     pub progress: f64,
     pub source_file_path: String,
     pub status_message: Option<String>,
+    // Story 1.3: 词汇层和句式层分析结果
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub vocabulary: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sentence: Option<serde_json::Value>,
 }
 
 impl From<StyleAnalysisTask> for TaskData {
     fn from(task: StyleAnalysisTask) -> Self {
+        let vocabulary = task.vocabulary_json.and_then(|v| serde_json::from_str(&v).ok());
+        let sentence = task.sentence_json.and_then(|v| serde_json::from_str(&v).ok());
+
         Self {
             task_id: task.id,
             status: task.status,
             progress: task.progress,
             source_file_path: task.source_file_path,
             status_message: task.status_message,
+            vocabulary,
+            sentence,
         }
     }
 }
@@ -110,6 +120,54 @@ pub async fn cancel_task(
     }))
 }
 
+/// 获取词汇层分析结果
+/// GET /api/styles/analyze/:task_id/vocabulary
+pub async fn get_vocabulary_result(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(task_id): Path<String>,
+) -> Result<Json<ApiSuccess<serde_json::Value>>, AppError> {
+    let user_id = get_user_id_from_token(&state.db, &headers).await?;
+
+    let service = StyleUploadService::new(state.db);
+    let task = service.get_task(&task_id, &user_id).await?;
+
+    let vocabulary = task.vocabulary_json
+        .ok_or_else(|| AppError::not_found("VOCABULARY_NOT_READY", "词汇层分析尚未完成。"))?;
+
+    let vocab_value: serde_json::Value = serde_json::from_str(&vocabulary)
+        .map_err(|e| AppError::serialization_error(format!("解析词汇分析结果失败：{}", e)))?;
+
+    Ok(Json(ApiSuccess {
+        success: true,
+        data: vocab_value,
+    }))
+}
+
+/// 获取句式层分析结果
+/// GET /api/styles/analyze/:task_id/sentence
+pub async fn get_sentence_result(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(task_id): Path<String>,
+) -> Result<Json<ApiSuccess<serde_json::Value>>, AppError> {
+    let user_id = get_user_id_from_token(&state.db, &headers).await?;
+
+    let service = StyleUploadService::new(state.db);
+    let task = service.get_task(&task_id, &user_id).await?;
+
+    let sentence = task.sentence_json
+        .ok_or_else(|| AppError::not_found("SENTENCE_NOT_READY", "句式层分析尚未完成。"))?;
+
+    let sentence_value: serde_json::Value = serde_json::from_str(&sentence)
+        .map_err(|e| AppError::serialization_error(format!("解析句式分析结果失败：{}", e)))?;
+
+    Ok(Json(ApiSuccess {
+        success: true,
+        data: sentence_value,
+    }))
+}
+
 /// 从 JWT token 获取用户 ID
 async fn get_user_id_from_token(
     db: &sqlx::SqlitePool,
@@ -119,7 +177,9 @@ async fn get_user_id_from_token(
 
     #[derive(Debug, serde::Deserialize)]
     struct JwtClaims {
+        #[allow(dead_code)]
         sub: String,
+        #[allow(dead_code)]
         exp: usize,
     }
 

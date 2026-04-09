@@ -34,6 +34,11 @@ pub enum AppError {
         code: &'static str,
         message: String,
     },
+    #[error("{message}")]
+    Serialization {
+        code: &'static str,
+        message: String,
+    },
 }
 
 #[derive(Debug, Serialize)]
@@ -77,9 +82,23 @@ impl AppError {
         }
     }
 
+    pub fn serialization_error(message: impl Into<String>) -> Self {
+        Self::Serialization {
+            code: "SERIALIZATION_ERROR",
+            message: message.into(),
+        }
+    }
+
     pub fn internal(message: impl Into<String>) -> Self {
         Self::Internal {
             code: "INTERNAL_SERVER_ERROR",
+            message: message.into(),
+        }
+    }
+
+    pub fn file_io_error(message: impl Into<String>) -> Self {
+        Self::Internal {
+            code: "FILE_IO_ERROR",
             message: message.into(),
         }
     }
@@ -90,7 +109,7 @@ impl AppError {
             Self::Conflict { .. } => StatusCode::CONFLICT,
             Self::Unauthorized { .. } => StatusCode::UNAUTHORIZED,
             Self::NotFound { .. } => StatusCode::NOT_FOUND,
-            Self::Internal { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+            Self::Internal { .. } | Self::Serialization { .. } => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
@@ -101,6 +120,7 @@ impl AppError {
             | Self::Unauthorized { code, .. }
             | Self::NotFound { code, .. }
             | Self::Internal { code, .. } => code,
+            Self::Serialization { code, .. } => code,
         }
     }
 
