@@ -1,132 +1,302 @@
 <template>
-  <div class="style-report">
-    <n-card title="风格分析报告">
-      <n-spin :show="loading">
-        <div v-if="report" class="report-content">
-          <n-descriptions bordered :column="2">
-            <n-descriptions-item label="任务ID">
-              {{ report.task_id }}
-            </n-descriptions-item>
-            <n-descriptions-item label="状态">
-              <n-tag :type="statusType">{{ report.status }}</n-tag>
-            </n-descriptions-item>
-            <n-descriptions-item label="创建时间">
-              {{ formatDate(report.created_at) }}
-            </n-descriptions-item>
-            <n-descriptions-item label="更新时间">
-              {{ formatDate(report.updated_at) }}
-            </n-descriptions-item>
-          </n-descriptions>
-
-          <n-divider>词汇特征</n-divider>
-          <n-descriptions bordered :column="2" v-if="report.vocabulary_json">
-            <n-descriptions-item label="平均词长">
-              {{ report.vocabulary_json?.avg_word_length?.toFixed(2) || '-' }}
-            </n-descriptions-item>
-            <n-descriptions-item label="词汇多样性">
-              {{ report.vocabulary_json?.vocabulary_diversity?.toFixed(2) || '-' }}
-            </n-descriptions-item>
-          </n-descriptions>
-
-          <n-divider>句式特征</n-divider>
-          <n-descriptions bordered :column="2" v-if="report.sentence_json">
-            <n-descriptions-item label="平均句长">
-              {{ report.sentence_json?.avg_sentence_length?.toFixed(2) || '-' }}
-            </n-descriptions-item>
-            <n-descriptions-item label="句式多样性">
-              {{ report.sentence_json?.sentence_diversity?.toFixed(2) || '-' }}
-            </n-descriptions-item>
-          </n-descriptions>
-
-          <n-divider>风格向量</n-divider>
-          <div v-if="report.style_vector_json" class="vector-display">
-            <n-code :code="JSON.stringify(report.style_vector_json, null, 2)" language="json" />
-          </div>
-          <n-empty v-else description="暂无风格向量数据" />
+  <div class="style-report-view">
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-state">
+      <n-spin size="large" />
+      <p>加载风格报告中...</p>
+    </div>
+    
+    <!-- 错误状态 -->
+    <div v-else-if="error" class="error-state">
+      <n-result status="error" title="加载失败" :description="error">
+        <template #footer>
+          <n-space>
+            <n-button @click="loadStyleData">重试</n-button>
+            <n-button type="primary" @click="goBack">返回</n-button>
+          </n-space>
+        </template>
+      </n-result>
+    </div>
+    
+    <!-- 分析未完成状态 -->
+    <div v-else-if="styleData && styleData.status !== 'completed'" class="pending-state">
+      <n-result 
+        status="info" 
+        title="分析进行中" 
+        :description="`当前进度: ${((styleData.progress || 0) * 100).toFixed(0)}%`"
+      >
+        <template #footer>
+          <n-space>
+            <n-button type="primary" @click="loadStyleData">刷新</n-button>
+            <n-button @click="goBack">返回</n-button>
+          </n-space>
+        </template>
+      </n-result>
+    </div>
+    
+    <!-- 正常报告内容 -->
+    <template v-else-if="styleData">
+      <div class="report-header">
+        <h1>风格分析报告</h1>
+        <div class="report-meta">
+          <span><strong>来源：</strong>{{ styleData.source_file || '未知' }}</span>
+          <span><strong>字数：</strong>{{ formatNumber(styleData.total_chars || 0) }}</span>
+          <span><strong>分析完成：</strong>{{ formatDate(styleData.completed_at) }}</span>
         </div>
-        <n-empty v-else description="暂无报告数据" />
-      </n-spin>
-    </n-card>
+      </div>
+      
+      <div class="report-content">
+        <!-- 雷达图区域 -->
+        <div class="radar-section">
+          <h2>风格雷达图</h2>
+          <StyleRadarChart :style-data="normalizedStyleData" />
+        </div>
+        
+        <!-- 特征详情区域 -->
+        <div class="features-section">
+          <h2>七层特征详情</h2>
+          <FeatureDetailPanel :style-data="styleData" />
+        </div>
+        
+        <!-- 示例段落区域 -->
+        <div class="examples-section">
+          <h2>示例段落</h2>
+          <ExamplePassages :passages="examplePassages" />
+        </div>
+      </div>
+      
+      <!-- 操作按钮 -->
+      <div class="report-actions">
+        <n-button @click="handleExport">
+          导出报告
+        </n-button>
+        <n-button type="primary" @click="handleSaveStyle">
+          保存风格档案
+        </n-button>
+        <n-button @click="handleReanalyze">
+          重新分析
+        </n-button>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import {
-  NCard,
-  NDescriptions,
-  NDescriptionsItem,
-  NTag,
-  NSpin,
-  NDivider,
-  NEmpty,
-  NCode,
-  useMessage
-} from 'naive-ui'
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { 
+  NButton, 
+  NSpin, 
+  NResult, 
+  NSpace, 
+  useMessage 
+} from 'naive-ui';
+// 图标暂时不使用，可以后续添加
+import axios from 'axios';
+import StyleRadarChart from '../components/style/StyleRadarChart.vue';
+import FeatureDetailPanel from '../components/style/FeatureDetailPanel.vue';
+import ExamplePassages from '../components/style/ExamplePassages.vue';
 
-const route = useRoute()
-const message = useMessage()
-const loading = ref(false)
-const report = ref<any>(null)
+const route = useRoute();
+const router = useRouter();
+const message = useMessage();
 
-const taskId = computed(() => route.params.taskId as string)
+const taskId = route.params.id as string;
 
-const statusType = computed(() => {
-  if (!report.value) return 'default'
-  switch (report.value.status) {
-    case 'completed':
-      return 'success'
-    case 'processing':
-      return 'info'
-    case 'failed':
-      return 'error'
-    default:
-      return 'default'
+const loading = ref(true);
+const error = ref<string | null>(null);
+const styleData = ref<any>(null);
+
+// 计算归一化的风格数据用于雷达图
+const normalizedStyleData = computed(() => {
+  if (!styleData.value) {
+    return {
+      vocabulary: { score: 0 },
+      sentence: { score: 0 },
+      rhetoric: { score: 0 },
+      narrative: { score: 0 },
+      emotion: { score: 0 },
+      pacing: { score: 0 },
+      dialogue: { score: 0 },
+      description: { score: 0 },
+    };
   }
-})
-
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return '-'
-  return new Date(dateStr).toLocaleString('zh-CN')
-}
-
-const fetchReport = async () => {
-  if (!taskId.value) return
   
-  loading.value = true
+  return {
+    vocabulary: { ...styleData.value.vocabulary, score: calculateLayerScore(styleData.value.vocabulary) },
+    sentence: { ...styleData.value.sentence, score: calculateLayerScore(styleData.value.sentence) },
+    rhetoric: { ...styleData.value.rhetoric, score: calculateLayerScore(styleData.value.rhetoric) },
+    narrative: { ...styleData.value.narrative, score: calculateLayerScore(styleData.value.narrative) },
+    emotion: { ...styleData.value.emotion, score: calculateLayerScore(styleData.value.emotion) },
+    pacing: { ...styleData.value.pacing, score: calculateLayerScore(styleData.value.pacing) },
+    dialogue: { ...styleData.value.dialogue, score: calculateLayerScore(styleData.value.dialogue) },
+    description: { ...styleData.value.description, score: calculateLayerScore(styleData.value.description) },
+  };
+});
+
+// 示例段落
+const examplePassages = computed(() => {
+  if (!styleData.value?.example_passages) {
+    return [];
+  }
+  return styleData.value.example_passages;
+});
+
+onMounted(async () => {
+  await loadStyleData();
+});
+
+async function loadStyleData() {
+  loading.value = true;
+  error.value = null;
+  
   try {
-    const response = await fetch(`/api/style-analysis/${taskId.value}`)
-    const data = await response.json()
-    if (data.success) {
-      report.value = data.data
-    } else {
-      message.error('获取报告失败')
-    }
-  } catch (error) {
-    message.error('获取报告失败')
-    console.error(error)
+    const response = await axios.get(`/api/style-analysis/${taskId}`);
+    styleData.value = response.data.data;
+  } catch (err: any) {
+    console.error('加载风格数据失败:', err);
+    error.value = err.response?.data?.message || '加载风格数据失败';
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
-onMounted(() => {
-  fetchReport()
-})
+function calculateLayerScore(layerData: any): number {
+  if (!layerData) return 0;
+  
+  // 根据不同层的特征计算综合分数
+  // 这里使用简化的计算方式，实际可以根据业务需求调整
+  if (layerData.ttr !== undefined) {
+    // 词汇层：TTR 越高，分数越高
+    return Math.min(layerData.ttr * 2, 1);
+  }
+  if (layerData.avg_sentence_length !== undefined) {
+    // 句式层：根据平均句长归一化
+    return Math.min(layerData.avg_sentence_length / 50, 1);
+  }
+  if (layerData.metaphor_frequency !== undefined) {
+    // 修辞层：根据修辞频率归一化
+    return Math.min((layerData.metaphor_frequency + layerData.simile_frequency) / 100, 1);
+  }
+  if (layerData.pov_type !== undefined) {
+    // 叙事层：根据 show_vs_tell 比例
+    return layerData.show_vs_tell_ratio || 0.5;
+  }
+  if (layerData.overall_tone !== undefined) {
+    // 情感层：根据基调置信度
+    return layerData.tone_confidence || 0.5;
+  }
+  if (layerData.avg_chapter_length !== undefined) {
+    // 节奏层：根据章节长度归一化
+    return Math.min(layerData.avg_chapter_length / 10000, 1);
+  }
+  if (layerData.dialogue_ratio !== undefined) {
+    // 对话层：根据对话比例
+    return layerData.dialogue_ratio;
+  }
+  if (layerData.description_ratio !== undefined) {
+    // 描写层：根据描写比例
+    return layerData.description_ratio;
+  }
+  
+  return 0.5;
+}
+
+function formatNumber(num: number): string {
+  return num.toLocaleString();
+}
+
+function formatDate(dateStr: string | undefined): string {
+  if (!dateStr) return '未知';
+  const date = new Date(dateStr);
+  return date.toLocaleString('zh-CN');
+}
+
+function handleExport() {
+  window.open(`/api/style-analysis/${taskId}/export`, '_blank');
+}
+
+function handleSaveStyle() {
+  router.push(`/styles/${taskId}/save`);
+}
+
+function handleReanalyze() {
+  router.push('/styles/upload');
+}
+
+function goBack() {
+  router.back();
+}
 </script>
 
 <style scoped>
-.style-report {
-  padding: 20px;
+.style-report-view {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.loading-state,
+.error-state,
+.pending-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 16px;
+}
+
+.report-header {
+  margin-bottom: 32px;
+}
+
+.report-header h1 {
+  color: #D4D4D4;
+  margin-bottom: 8px;
+}
+
+.report-meta {
+  display: flex;
+  gap: 24px;
+  color: #858585;
+  margin-top: 8px;
+}
+
+.report-meta span {
+  font-size: 14px;
+}
+
+.report-meta strong {
+  color: #A6A6A6;
 }
 
 .report-content {
-  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
-.vector-display {
-  max-height: 300px;
-  overflow: auto;
+.report-content h2 {
+  color: #D4D4D4;
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.radar-section,
+.features-section,
+.examples-section {
+  background: #252526;
+  padding: 24px;
+  border-radius: 8px;
+}
+
+.report-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #3C3C3C;
 }
 </style>

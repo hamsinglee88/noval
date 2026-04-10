@@ -12,7 +12,7 @@ use axum::{
 };
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
-use crate::{app_state::AppState, handlers::{auth, styles, style_profiles, projects}};
+use crate::{app_state::AppState, handlers::{auth, styles, style_profiles}};
 
 pub fn create_router(state: AppState) -> Router {
     let cors = CorsLayer::new()
@@ -48,12 +48,6 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/style-profiles/{id}", get(style_profiles::get_style_profile))
         .route("/api/style-profiles/{id}", axum::routing::delete(style_profiles::delete_style_profile))
         .route("/api/style-profiles/{id}/export", get(style_profiles::export_style_profile))
-        // Project routes
-        .route("/api/projects", get(projects::list_projects))
-        .route("/api/projects", post(projects::create_project))
-        .route("/api/projects/{id}", get(projects::get_project))
-        .route("/api/projects/{id}", axum::routing::put(projects::update_project))
-        .route("/api/projects/{id}", axum::routing::delete(projects::delete_project))
         .with_state(state)
         .layer(cors)
 }
