@@ -12,7 +12,7 @@ use axum::{
 };
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
-use crate::{app_state::AppState, handlers::{auth, styles}};
+use crate::{app_state::AppState, handlers::{auth, styles, style_profiles, projects, style_mixing}};
 
 pub fn create_router(state: AppState) -> Router {
     let cors = CorsLayer::new()
@@ -41,6 +41,22 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/styles/analyze/{task_id}/narrative", get(styles::get_narrative_result))
         .route("/api/styles/analyze/{task_id}/emotion", get(styles::get_emotion_result))
         .route("/api/styles/analyze/{task_id}/pacing", get(styles::get_pacing_result))
+        // Style Profile routes
+        .route("/api/style-profiles", get(style_profiles::list_style_profiles))
+        .route("/api/style-profiles/save", post(style_profiles::save_style_profile))
+        .route("/api/style-profiles/import", post(style_profiles::import_style_profile))
+        .route("/api/style-profiles/{id}", get(style_profiles::get_style_profile))
+        .route("/api/style-profiles/{id}", axum::routing::delete(style_profiles::delete_style_profile))
+        .route("/api/style-profiles/{id}/export", get(style_profiles::export_style_profile))
+        // Project routes
+        .route("/api/projects", get(projects::list_projects))
+        .route("/api/projects", post(projects::create_project))
+        .route("/api/projects/{id}", get(projects::get_project))
+        .route("/api/projects/{id}", axum::routing::put(projects::update_project))
+        .route("/api/projects/{id}", axum::routing::delete(projects::delete_project))
+        // Style Mixing routes
+        .route("/api/styles/mix/preview", post(style_mixing::preview_mix))
+        .route("/api/styles/mix/save", post(style_mixing::save_mixed_style))
         .with_state(state)
         .layer(cors)
 }
