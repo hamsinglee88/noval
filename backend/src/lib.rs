@@ -21,6 +21,8 @@ pub fn create_router(state: AppState) -> Router {
         .allow_origin(AllowOrigin::list([
             "http://127.0.0.1:5173".parse().expect("valid origin"),
             "http://localhost:5173".parse().expect("valid origin"),
+            "http://127.0.0.1:5174".parse().expect("valid origin"),
+            "http://localhost:5174".parse().expect("valid origin"),
         ]));
 
     Router::new()
@@ -33,6 +35,12 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/styles/analyze", post(styles::analyze))
         .route("/api/styles/analyze/{task_id}", get(styles::get_task_status))
         .route("/api/styles/analyze/{task_id}/cancel", post(styles::cancel_task))
+        .route("/api/styles/analyze/{task_id}/vocabulary", get(styles::get_vocabulary_result))
+        .route("/api/styles/analyze/{task_id}/sentence", get(styles::get_sentence_result))
+        .route("/api/styles/analyze/{task_id}/rhetoric", get(styles::get_rhetoric_result))
+        .route("/api/styles/analyze/{task_id}/narrative", get(styles::get_narrative_result))
+        .route("/api/styles/analyze/{task_id}/emotion", get(styles::get_emotion_result))
+        .route("/api/styles/analyze/{task_id}/pacing", get(styles::get_pacing_result))
         .with_state(state)
         .layer(cors)
 }
