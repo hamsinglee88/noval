@@ -56,7 +56,8 @@ development_status:
   1-9-style-profile-management: ready-for-dev
   1-10-project-creation: ready-for-dev
   1-11-style-mixing: done
-  1-12-style-similarity: ready-for-dev
+  1-12-style-similarity: done
+  epic-1: done
   epic-1-retrospective: optional
 
   # Epic 2: 创作编辑器核心功能
