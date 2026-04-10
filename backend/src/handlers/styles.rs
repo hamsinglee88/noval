@@ -40,6 +40,14 @@ pub struct TaskData {
     pub emotion: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pacing: Option<serde_json::Value>,
+    // Story 1.6: 对话层和描写层分析结果
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dialogue: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<serde_json::Value>,
+    // Story 1.7: 风格向量
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub style_vector: Option<serde_json::Value>,
 }
 
 impl From<StyleAnalysisTask> for TaskData {
@@ -50,6 +58,9 @@ impl From<StyleAnalysisTask> for TaskData {
         let narrative = task.narrative_json.and_then(|v| serde_json::from_str(&v).ok());
         let emotion = task.emotion_json.and_then(|v| serde_json::from_str(&v).ok());
         let pacing = task.pacing_json.and_then(|v| serde_json::from_str(&v).ok());
+        let dialogue = task.dialogue_json.and_then(|v| serde_json::from_str(&v).ok());
+        let description = task.description_json.and_then(|v| serde_json::from_str(&v).ok());
+        let style_vector = task.style_vector_json.and_then(|v| serde_json::from_str(&v).ok());
 
         Self {
             task_id: task.id,
@@ -63,6 +74,9 @@ impl From<StyleAnalysisTask> for TaskData {
             narrative,
             emotion,
             pacing,
+            dialogue,
+            description,
+            style_vector,
         }
     }
 }

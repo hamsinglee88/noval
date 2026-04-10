@@ -39,9 +39,9 @@
       <div class="report-header">
         <h1>风格分析报告</h1>
         <div class="report-meta">
-          <span><strong>来源：</strong>{{ styleData.source_file_path || styleData.source_file || '未知' }}</span>
+          <span><strong>来源：</strong>{{ styleData.source_file || '未知' }}</span>
           <span><strong>字数：</strong>{{ formatNumber(styleData.total_chars || 0) }}</span>
-          <span><strong>创建时间：</strong>{{ formatDate(styleData.created_at || styleData.completed_at) }}</span>
+          <span><strong>分析完成：</strong>{{ formatDate(styleData.completed_at) }}</span>
         </div>
       </div>
       
@@ -49,115 +49,19 @@
         <!-- 雷达图区域 -->
         <div class="radar-section">
           <h2>风格雷达图</h2>
-          <div class="radar-placeholder">
-            <p>雷达图可视化（七层风格特征）</p>
-            <div class="layer-list">
-              <div v-for="(layer, index) in layerScores" :key="index" class="layer-item">
-                <span class="layer-name">{{ layer.name }}</span>
-                <div class="layer-bar">
-                  <div class="layer-fill" :style="{ width: (layer.score * 100) + '%' }"></div>
-                </div>
-                <span class="layer-score">{{ (layer.score * 100).toFixed(0) }}%</span>
-              </div>
-            </div>
-          </div>
+          <StyleRadarChart :style-data="normalizedStyleData" />
         </div>
         
         <!-- 特征详情区域 -->
         <div class="features-section">
           <h2>七层特征详情</h2>
-          <n-collapse>
-            <n-collapse-item title="词汇层特征" name="vocabulary">
-              <n-descriptions bordered :column="2">
-                <n-descriptions-item label="词汇丰富度 (TTR)">
-                  {{ styleData.vocabulary?.ttr?.toFixed(2) || '-' }}
-                </n-descriptions-item>
-                <n-descriptions-item label="修正 TTR">
-                  {{ styleData.vocabulary?.root_ttr?.toFixed(2) || '-' }}
-                </n-descriptions-item>
-                <n-descriptions-item label="总词数" :span="2">
-                  {{ styleData.vocabulary?.total_words || '-' }}
-                </n-descriptions-item>
-              </n-descriptions>
-            </n-collapse-item>
-            
-            <n-collapse-item title="句式层特征" name="sentence">
-              <n-descriptions bordered :column="2">
-                <n-descriptions-item label="平均句长">
-                  {{ styleData.sentence?.avg_sentence_length?.toFixed(1) || '-' }} 字
-                </n-descriptions-item>
-                <n-descriptions-item label="短句比例">
-                  {{ formatPercent(styleData.sentence?.short_sentence_ratio) }}
-                </n-descriptions-item>
-              </n-descriptions>
-            </n-collapse-item>
-
-            <n-collapse-item title="修辞层特征" name="rhetoric">
-              <n-descriptions bordered :column="2">
-                <n-descriptions-item label="隐喻频率">
-                  {{ styleData.rhetoric?.metaphor_frequency?.toFixed(1) || '-' }} 次/万字
-                </n-descriptions-item>
-                <n-descriptions-item label="明喻频率">
-                  {{ styleData.rhetoric?.simile_frequency?.toFixed(1) || '-' }} 次/万字
-                </n-descriptions-item>
-              </n-descriptions>
-            </n-collapse-item>
-
-            <n-collapse-item title="叙事层特征" name="narrative">
-              <n-descriptions bordered :column="2">
-                <n-descriptions-item label="叙事视角">
-                  {{ styleData.narrative?.pov_type || '-' }}
-                </n-descriptions-item>
-                <n-descriptions-item label="Show vs Tell">
-                  {{ formatPercent(styleData.narrative?.show_vs_tell_ratio) }}
-                </n-descriptions-item>
-              </n-descriptions>
-            </n-collapse-item>
-
-            <n-collapse-item title="情感层特征" name="emotion">
-              <n-descriptions bordered :column="2">
-                <n-descriptions-item label="情感基调">
-                  {{ styleData.emotion?.overall_tone || '-' }}
-                </n-descriptions-item>
-                <n-descriptions-item label="基调置信度">
-                  {{ formatPercent(styleData.emotion?.tone_confidence) }}
-                </n-descriptions-item>
-              </n-descriptions>
-            </n-collapse-item>
-
-            <n-collapse-item title="节奏层特征" name="pacing">
-              <n-descriptions bordered :column="2">
-                <n-descriptions-item label="平均章节长度">
-                  {{ styleData.pacing?.avg_chapter_length?.toFixed(0) || '-' }} 字
-                </n-descriptions-item>
-                <n-descriptions-item label="悬念结尾比例">
-                  {{ formatPercent(styleData.pacing?.cliffhanger_ratio) }}
-                </n-descriptions-item>
-              </n-descriptions>
-            </n-collapse-item>
-
-            <n-collapse-item title="对话层特征" name="dialogue">
-              <n-descriptions bordered :column="2">
-                <n-descriptions-item label="对话比例">
-                  {{ formatPercent(styleData.dialogue?.dialogue_ratio) }}
-                </n-descriptions-item>
-                <n-descriptions-item label="角色声音区分度">
-                  {{ formatPercent(styleData.dialogue?.character_voice_distinction) }}
-                </n-descriptions-item>
-              </n-descriptions>
-            </n-collapse-item>
-
-            <n-collapse-item title="描写层特征" name="description">
-              <n-descriptions bordered :column="2">
-                <n-descriptions-item label="描写比例">
-                  {{ formatPercent(styleData.description_data?.description_ratio || styleData.description?.description_ratio) }}
-                </n-descriptions-item>
-                <n-descriptions-item label="详细程度">
-                  {{ formatPercent(styleData.description_data?.detail_granularity || styleData.description?.detail_granularity) }}
-                </n-descriptions-item>
-              </n-descriptions>
-            </n-collapse-item>
-          </n-collapse>
+          <FeatureDetailPanel :style-data="styleData" />
+        </div>
+        
+        <!-- 示例段落区域 -->
+        <div class="examples-section">
+          <h2>示例段落</h2>
+          <ExamplePassages :passages="examplePassages" />
         </div>
       </div>
       
@@ -166,11 +70,11 @@
         <n-button @click="handleExport">
           导出报告
         </n-button>
-        <n-button v-if="taskId && !styleData.name" type="primary" @click="handleSaveStyle">
+        <n-button type="primary" @click="handleSaveStyle">
           保存风格档案
         </n-button>
-        <n-button @click="goBack">
-          返回
+        <n-button @click="handleReanalyze">
+          重新分析
         </n-button>
       </div>
     </template>
@@ -184,41 +88,58 @@ import {
   NButton, 
   NSpin, 
   NResult, 
-  NSpace,
-  NCollapse,
-  NCollapseItem,
-  NDescriptions,
-  NDescriptionsItem,
+  NSpace, 
   useMessage 
 } from 'naive-ui';
+// 图标暂时不使用，可以后续添加
 import axios from 'axios';
+import StyleRadarChart from '../components/style/StyleRadarChart.vue';
+import FeatureDetailPanel from '../components/style/FeatureDetailPanel.vue';
+import ExamplePassages from '../components/style/ExamplePassages.vue';
 
 const route = useRoute();
 const router = useRouter();
 const message = useMessage();
 
-const id = route.params.id as string;
-const isTaskId = route.name === 'style-report';
+const taskId = route.params.id as string;
 
 const loading = ref(true);
 const error = ref<string | null>(null);
 const styleData = ref<any>(null);
-const taskId = ref<string | null>(isTaskId ? id : null);
 
-// 计算各层分数用于显示
-const layerScores = computed(() => {
-  if (!styleData.value) return [];
+// 计算归一化的风格数据用于雷达图
+const normalizedStyleData = computed(() => {
+  if (!styleData.value) {
+    return {
+      vocabulary: { score: 0 },
+      sentence: { score: 0 },
+      rhetoric: { score: 0 },
+      narrative: { score: 0 },
+      emotion: { score: 0 },
+      pacing: { score: 0 },
+      dialogue: { score: 0 },
+      description: { score: 0 },
+    };
+  }
   
-  return [
-    { name: '词汇层', score: calculateLayerScore(styleData.value.vocabulary, 'vocabulary') },
-    { name: '句式层', score: calculateLayerScore(styleData.value.sentence, 'sentence') },
-    { name: '修辞层', score: calculateLayerScore(styleData.value.rhetoric, 'rhetoric') },
-    { name: '叙事层', score: calculateLayerScore(styleData.value.narrative, 'narrative') },
-    { name: '情感层', score: calculateLayerScore(styleData.value.emotion, 'emotion') },
-    { name: '节奏层', score: calculateLayerScore(styleData.value.pacing, 'pacing') },
-    { name: '对话层', score: calculateLayerScore(styleData.value.dialogue, 'dialogue') },
-    { name: '描写层', score: calculateLayerScore(styleData.value.description_data || styleData.value.description, 'description') },
-  ];
+  return {
+    vocabulary: { ...styleData.value.vocabulary, score: calculateLayerScore(styleData.value.vocabulary) },
+    sentence: { ...styleData.value.sentence, score: calculateLayerScore(styleData.value.sentence) },
+    rhetoric: { ...styleData.value.rhetoric, score: calculateLayerScore(styleData.value.rhetoric) },
+    narrative: { ...styleData.value.narrative, score: calculateLayerScore(styleData.value.narrative) },
+    emotion: { ...styleData.value.emotion, score: calculateLayerScore(styleData.value.emotion) },
+    pacing: { ...styleData.value.pacing, score: calculateLayerScore(styleData.value.pacing) },
+    dialogue: { ...styleData.value.dialogue, score: calculateLayerScore(styleData.value.dialogue) },
+    description: { ...styleData.value.description, score: calculateLayerScore(styleData.value.description) },
+  };
+});
+
+// 示例段落
+const examplePassages = computed(() => {
+  if (!styleData.value?.example_passages) {
+    return [];
+  }
+  return styleData.value.example_passages;
 });
 
 onMounted(async () => {
@@ -230,18 +151,8 @@ async function loadStyleData() {
   error.value = null;
   
   try {
-    // 根据路由判断是任务还是档案
-    const endpoint = isTaskId 
-      ? `/api/styles/analyze/${id}`
-      : `/api/style-profiles/${id}`;
-    
-    const response = await axios.get(endpoint);
+    const response = await axios.get(`/api/style-analysis/${taskId}`);
     styleData.value = response.data.data;
-    
-    // 如果是档案，提取 task_id
-    if (!isTaskId && styleData.value.task_id) {
-      taskId.value = styleData.value.task_id;
-    }
   } catch (err: any) {
     console.error('加载风格数据失败:', err);
     error.value = err.response?.data?.message || '加载风格数据失败';
@@ -250,29 +161,45 @@ async function loadStyleData() {
   }
 }
 
-function calculateLayerScore(layerData: any, layerType: string): number {
+function calculateLayerScore(layerData: any): number {
   if (!layerData) return 0;
   
-  switch (layerType) {
-    case 'vocabulary':
-      return Math.min((layerData.ttr || 0) * 2, 1);
-    case 'sentence':
-      return Math.min((layerData.avg_sentence_length || 0) / 50, 1);
-    case 'rhetoric':
-      return Math.min(((layerData.metaphor_frequency || 0) + (layerData.simile_frequency || 0)) / 100, 1);
-    case 'narrative':
-      return layerData.show_vs_tell_ratio || 0.5;
-    case 'emotion':
-      return layerData.tone_confidence || 0.5;
-    case 'pacing':
-      return Math.min((layerData.avg_chapter_length || 0) / 10000, 1);
-    case 'dialogue':
-      return layerData.dialogue_ratio || 0.3;
-    case 'description':
-      return layerData.description_ratio || 0.5;
-    default:
-      return 0.5;
+  // 根据不同层的特征计算综合分数
+  // 这里使用简化的计算方式，实际可以根据业务需求调整
+  if (layerData.ttr !== undefined) {
+    // 词汇层：TTR 越高，分数越高
+    return Math.min(layerData.ttr * 2, 1);
   }
+  if (layerData.avg_sentence_length !== undefined) {
+    // 句式层：根据平均句长归一化
+    return Math.min(layerData.avg_sentence_length / 50, 1);
+  }
+  if (layerData.metaphor_frequency !== undefined) {
+    // 修辞层：根据修辞频率归一化
+    return Math.min((layerData.metaphor_frequency + layerData.simile_frequency) / 100, 1);
+  }
+  if (layerData.pov_type !== undefined) {
+    // 叙事层：根据 show_vs_tell 比例
+    return layerData.show_vs_tell_ratio || 0.5;
+  }
+  if (layerData.overall_tone !== undefined) {
+    // 情感层：根据基调置信度
+    return layerData.tone_confidence || 0.5;
+  }
+  if (layerData.avg_chapter_length !== undefined) {
+    // 节奏层：根据章节长度归一化
+    return Math.min(layerData.avg_chapter_length / 10000, 1);
+  }
+  if (layerData.dialogue_ratio !== undefined) {
+    // 对话层：根据对话比例
+    return layerData.dialogue_ratio;
+  }
+  if (layerData.description_ratio !== undefined) {
+    // 描写层：根据描写比例
+    return layerData.description_ratio;
+  }
+  
+  return 0.5;
 }
 
 function formatNumber(num: number): string {
@@ -285,23 +212,16 @@ function formatDate(dateStr: string | undefined): string {
   return date.toLocaleString('zh-CN');
 }
 
-function formatPercent(value: number | undefined): string {
-  if (value === undefined || value === null) return '-';
-  return `${(value * 100).toFixed(1)}%`;
-}
-
 function handleExport() {
-  if (isTaskId) {
-    window.open(`/api/styles/analyze/${id}/export`, '_blank');
-  } else {
-    window.open(`/api/style-profiles/${id}/export`, '_blank');
-  }
+  window.open(`/api/style-analysis/${taskId}/export`, '_blank');
 }
 
 function handleSaveStyle() {
-  if (taskId.value) {
-    router.push(`/styles/${taskId.value}/save`);
-  }
+  router.push(`/styles/${taskId}/save`);
+}
+
+function handleReanalyze() {
+  router.push('/styles/upload');
 }
 
 function goBack() {
@@ -341,7 +261,6 @@ function goBack() {
   gap: 24px;
   color: #858585;
   margin-top: 8px;
-  flex-wrap: wrap;
 }
 
 .report-meta span {
@@ -365,52 +284,11 @@ function goBack() {
 }
 
 .radar-section,
-.features-section {
+.features-section,
+.examples-section {
   background: #252526;
   padding: 24px;
   border-radius: 8px;
-}
-
-.radar-placeholder {
-  padding: 20px;
-}
-
-.layer-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.layer-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.layer-name {
-  width: 80px;
-  color: #D4D4D4;
-}
-
-.layer-bar {
-  flex: 1;
-  height: 8px;
-  background: #3C3C3C;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.layer-fill {
-  height: 100%;
-  background: #4EC9B0;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-.layer-score {
-  width: 50px;
-  text-align: right;
-  color: #858585;
 }
 
 .report-actions {
