@@ -52,6 +52,12 @@ pub struct StyleAnalysisTask {
     // Story 1.3: 词汇层和句式层分析结果
     pub vocabulary_json: Option<String>,
     pub sentence_json: Option<String>,
+    // Story 1.4: 修辞层和叙事层分析结果
+    pub rhetoric_json: Option<String>,
+    pub narrative_json: Option<String>,
+    // Story 1.5: 情感层和节奏层分析结果
+    pub emotion_json: Option<String>,
+    pub pacing_json: Option<String>,
 }
 
 impl StyleAnalysisTask {

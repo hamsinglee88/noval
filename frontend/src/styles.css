@@ -18,14 +18,21 @@
   box-sizing: border-box;
 }
 
-body {
+html, body {
   margin: 0;
+  padding: 0;
   min-height: 100vh;
+  width: 100%;
   font-family: "SF Mono", "IBM Plex Sans", "PingFang SC", sans-serif;
   background:
     radial-gradient(circle at top, rgba(78, 201, 176, 0.12), transparent 28%),
     linear-gradient(180deg, #161719 0%, #1e1e1e 45%, #141416 100%);
   color: var(--color-text-primary);
+}
+
+#app {
+  min-height: 100vh;
+  width: 100%;
 }
 
 a {

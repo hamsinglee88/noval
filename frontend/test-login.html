@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head><title>Login Test</title></head>
+<body>
+<h1>登录测试</h1>
+<button onclick="testLogin()">测试登录</button>
+<button onclick="testRegister()">测试注册</button>
+<div id="result"></div>
+
+<script>
+async function testLogin() {
+  try {
+    const res = await fetch('http://127.0.0.1:3000/api/auth/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: 'test2', password: 'test123456'})
+    });
+    const data = await res.json();
+    document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+  } catch(e) {
+    document.getElementById('result').innerHTML = '<p style="color:red">错误：' + e.message + '</p>';
+  }
+}
+
+async function testRegister() {
+  try {
+    const res = await fetch('http://127.0.0.1:3000/api/auth/register', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: 'test'+Date.now(), password: 'test123456'})
+    });
+    const data = await res.json();
+    document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+  } catch(e) {
+    document.getElementById('result').innerHTML = '<p style="color:red">错误：' + e.message + '</p>';
+  }
+}
+</script>
+</body>
+</html>
