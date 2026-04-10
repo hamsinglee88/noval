@@ -1,18 +1,21 @@
 /// 风格分析统一入口
 ///
-/// 协调词汇层、句式层、修辞层、叙事层、情感层、节奏层等分析流程
+/// 协调词汇层、句式层、修辞层、叙事层、情感层、节奏层、对话层、描写层等分析流程
 
 use crate::errors::AppError;
 use crate::services::style_analysis::{
     extract_vocabulary_features, extract_sentence_features,
     extract_rhetoric_features, extract_narrative_features,
     extract_emotion_features, extract_pacing_features,
+    extract_dialogue_features, extract_description_features,
     extract_vocabulary_features_chunked, extract_sentence_features_chunked,
     extract_rhetoric_features_chunked, extract_narrative_features_chunked,
     extract_emotion_features_chunked, extract_pacing_features_chunked,
+    extract_dialogue_features_chunked, extract_description_features_chunked,
     VocabularyAnalysisResult, SentenceAnalysisResult,
     RhetoricAnalysisResult, NarrativeAnalysisResult,
     EmotionAnalysisResult, PacingAnalysisResult,
+    DialogueAnalysisResult, DescriptionAnalysisResult,
 };
 use sqlx::SqlitePool;
 use serde_json;
@@ -377,7 +380,100 @@ impl StyleAnalyzer {
         Ok(())
     }
 
-    /// 完整的六层分析流程（词汇、句式、修辞、叙事、情感、节奏）
+    /// 执行对话层和描写层分析（追加到情感/节奏分析之后）
+    pub async fn analyze_dialogue_and_description(
+        &self,
+        task_id: &str,
+        text: &str,
+    ) -> Result<(DialogueAnalysisResult, DescriptionAnalysisResult), AppError> {
+        // Step 7: 执行对话层分析
+        let dialogue_result = if self.config.use_chunked {
+            extract_dialogue_features_chunked(text, self.config.chunk_size)
+        } else {
+            extract_dialogue_features(text)
+        };
+
+        // 更新进度到 87.5%
+        self.update_task_progress(task_id, 0.875, "dialogue_completed", "对话层分析完成").await?;
+
+        // 保存对话分析结果
+        self.save_dialogue_result(task_id, &dialogue_result).await?;
+
+        // Step 8: 执行描写层分析
+        let description_result = if self.config.use_chunked {
+            extract_description_features_chunked(text, self.config.chunk_size)
+        } else {
+            extract_description_features(text)
+        };
+
+        // 更新进度到 100%
+        self.update_task_progress(task_id, 1.0, "all_layers_completed", "七层分析全部完成").await?;
+
+        // 保存描写分析结果
+        self.save_description_result(task_id, &description_result).await?;
+
+        Ok((dialogue_result, description_result))
+    }
+
+    /// 保存对话分析结果
+    async fn save_dialogue_result(
+        &self,
+        task_id: &str,
+        result: &DialogueAnalysisResult,
+    ) -> Result<(), AppError> {
+        let json = serde_json::to_string(result).map_err(|e| {
+            AppError::serialization_error(format!("对话分析结果序列化失败：{}", e))
+        })?;
+
+        sqlx::query(
+            r#"
+            UPDATE style_analysis_tasks
+            SET dialogue_json = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            "#,
+        )
+        .bind(json)
+        .bind(task_id)
+        .execute(&self.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to save dialogue result: {}", e);
+            AppError::internal(format!("保存对话分析结果失败：{}", e))
+        })?;
+
+        Ok(())
+    }
+
+    /// 保存描写分析结果
+    async fn save_description_result(
+        &self,
+        task_id: &str,
+        result: &DescriptionAnalysisResult,
+    ) -> Result<(), AppError> {
+        let json = serde_json::to_string(result).map_err(|e| {
+            AppError::serialization_error(format!("描写分析结果序列化失败：{}", e))
+        })?;
+
+        sqlx::query(
+            r#"
+            UPDATE style_analysis_tasks
+            SET description_json = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            "#,
+        )
+        .bind(json)
+        .bind(task_id)
+        .execute(&self.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to save description result: {}", e);
+            AppError::internal(format!("保存描写分析结果失败：{}", e))
+        })?;
+
+        Ok(())
+    }
+
+    /// 完整的七层分析流程（词汇、句式、修辞、叙事、情感、节奏、对话、描写）
     pub async fn analyze_all_layers(
         &self,
         task_id: &str,
@@ -402,8 +498,11 @@ impl StyleAnalyzer {
         let chapters: Vec<&str> = text.split("\n\n").filter(|s| !s.is_empty()).collect();
         self.analyze_emotion_and_pacing(task_id, &text, &chapters).await?;
 
-        // 标记为完成（75% 是当前的完整进度，后续还有对话层、描写层）
-        self.update_task_progress(task_id, 0.75, "completed", "六层分析完成").await?;
+        // 执行对话层和描写层分析
+        self.analyze_dialogue_and_description(task_id, &text).await?;
+
+        // 标记为完成（100%）
+        self.update_task_progress(task_id, 1.0, "completed", "七层分析全部完成").await?;
 
         Ok(())
     }
