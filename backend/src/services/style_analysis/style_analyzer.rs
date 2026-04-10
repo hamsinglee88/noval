@@ -16,6 +16,7 @@ use crate::services::style_analysis::{
     RhetoricAnalysisResult, NarrativeAnalysisResult,
     EmotionAnalysisResult, PacingAnalysisResult,
     DialogueAnalysisResult, DescriptionAnalysisResult,
+    style_vectorizer::StyleVectorizer,
 };
 use sqlx::SqlitePool;
 use serde_json;
@@ -488,22 +489,91 @@ impl StyleAnalyzer {
             })?;
 
         // 执行词汇层和句式层分析
-        self.analyze_vocabulary_and_sentence(task_id, &text).await?;
+        let (vocab_result, sentence_result) = self.analyze_vocabulary_and_sentence(task_id, &text).await?;
 
         // 执行修辞层和叙事层分析
-        self.analyze_rhetoric_and_narrative(task_id, &text).await?;
+        let (rhetoric_result, narrative_result) = self.analyze_rhetoric_and_narrative(task_id, &text).await?;
 
         // 执行情感层和节奏层分析
         // 简单按章节分割：按空行分块作为"章节"
         let chapters: Vec<&str> = text.split("\n\n").filter(|s| !s.is_empty()).collect();
-        self.analyze_emotion_and_pacing(task_id, &text, &chapters).await?;
+        let (emotion_result, pacing_result) = self.analyze_emotion_and_pacing(task_id, &text, &chapters).await?;
 
         // 执行对话层和描写层分析
-        self.analyze_dialogue_and_description(task_id, &text).await?;
+        let (dialogue_result, description_result) = self.analyze_dialogue_and_description(task_id, &text).await?;
+
+        // 执行向量化
+        self.vectorize_and_save(
+            task_id,
+            &vocab_result,
+            &sentence_result,
+            &rhetoric_result,
+            &narrative_result,
+            &emotion_result,
+            &pacing_result,
+            &dialogue_result,
+            &description_result,
+        ).await?;
 
         // 标记为完成（100%）
         self.update_task_progress(task_id, 1.0, "completed", "七层分析全部完成").await?;
 
+        Ok(())
+    }
+
+    /// 执行向量化并保存结果
+    pub async fn vectorize_and_save(
+        &self,
+        task_id: &str,
+        vocab: &VocabularyAnalysisResult,
+        sentence: &SentenceAnalysisResult,
+        rhetoric: &RhetoricAnalysisResult,
+        narrative: &NarrativeAnalysisResult,
+        emotion: &EmotionAnalysisResult,
+        pacing: &PacingAnalysisResult,
+        dialogue: &DialogueAnalysisResult,
+        description: &DescriptionAnalysisResult,
+    ) -> Result<(), AppError> {
+        // 创建向量化器
+        let vectorizer = StyleVectorizer::new();
+        
+        // 执行向量化
+        let style_vector = vectorizer.vectorize(
+            vocab,
+            sentence,
+            rhetoric,
+            narrative,
+            emotion,
+            pacing,
+            dialogue,
+            description,
+        );
+        
+        // 序列化向量为 JSON
+        let vector_json = serde_json::to_string(&style_vector).map_err(|e| {
+            AppError::serialization_error(format!("风格向量序列化失败：{}", e))
+        })?;
+        
+        // 保存向量到数据库
+        sqlx::query(
+            r#"
+            UPDATE style_analysis_tasks
+            SET style_vector_json = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            "#,
+        )
+        .bind(vector_json)
+        .bind(task_id)
+        .execute(&self.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to save style vector: {}", e);
+            AppError::internal(format!("保存风格向量失败：{}", e))
+        })?;
+        
+        // 更新进度到 95%
+        self.update_task_progress(task_id, 0.95, "vectorization_completed", "风格向量化完成").await?;
+        
         Ok(())
     }
 }
