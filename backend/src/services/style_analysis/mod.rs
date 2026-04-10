@@ -11,6 +11,7 @@ pub mod pacing_analysis;
 pub mod dialogue_analysis;
 pub mod description_analysis;
 pub mod style_analyzer;
+pub mod style_vectorizer;
 
 pub use vocabulary_analysis::{extract_vocabulary_features, extract_vocabulary_features_chunked, VocabularyAnalysisResult};
 pub use sentence_analysis::{extract_sentence_features, extract_sentence_features_chunked, SentenceAnalysisResult};
