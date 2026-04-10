@@ -58,6 +58,11 @@ pub struct StyleAnalysisTask {
     // Story 1.5: 情感层和节奏层分析结果
     pub emotion_json: Option<String>,
     pub pacing_json: Option<String>,
+    // Story 1.6: 对话层和描写层分析结果
+    pub dialogue_json: Option<String>,
+    pub description_json: Option<String>,
+    // Story 1.7: 风格向量
+    pub style_vector_json: Option<String>,
 }
 
 impl StyleAnalysisTask {
