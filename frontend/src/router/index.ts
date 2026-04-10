@@ -5,6 +5,8 @@ import ProjectsView from '@/views/ProjectsView.vue';
 import RegisterView from '@/views/RegisterView.vue';
 import StyleOnboardingView from '@/views/StyleOnboardingView.vue';
 import StyleLibraryView from '@/views/StyleLibraryView.vue';
+import StyleReportView from '@/views/StyleReportView.vue';
+import SaveStyleProfileView from '@/views/SaveStyleProfileView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -41,6 +43,18 @@ const router = createRouter({
       path: '/style-library',
       name: 'style-library',
       component: StyleLibraryView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/styles/:id/report',
+      name: 'style-report',
+      component: StyleReportView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/styles/:taskId/save',
+      name: 'save-style-profile',
+      component: SaveStyleProfileView,
       meta: { requiresAuth: true },
     },
   ],
