@@ -141,7 +141,8 @@ impl StyleUploadService {
         sqlx::query_as::<_, StyleAnalysisTask>(
             "SELECT id, user_id, source_file_path, source_filename, file_size,
                     status, progress, status_message, result_profile_id, error_message,
-                    created_at, updated_at
+                    created_at, updated_at, vocabulary_json, sentence_json, rhetoric_json, narrative_json,
+                    emotion_json, pacing_json
              FROM style_analysis_tasks
              WHERE id = ? AND user_id = ?"
         )

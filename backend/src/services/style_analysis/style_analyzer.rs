@@ -1,12 +1,18 @@
 /// 风格分析统一入口
 ///
-/// 协调词汇层、句式层等分析流程
+/// 协调词汇层、句式层、修辞层、叙事层、情感层、节奏层等分析流程
 
 use crate::errors::AppError;
 use crate::services::style_analysis::{
     extract_vocabulary_features, extract_sentence_features,
+    extract_rhetoric_features, extract_narrative_features,
+    extract_emotion_features, extract_pacing_features,
     extract_vocabulary_features_chunked, extract_sentence_features_chunked,
+    extract_rhetoric_features_chunked, extract_narrative_features_chunked,
+    extract_emotion_features_chunked, extract_pacing_features_chunked,
     VocabularyAnalysisResult, SentenceAnalysisResult,
+    RhetoricAnalysisResult, NarrativeAnalysisResult,
+    EmotionAnalysisResult, PacingAnalysisResult,
 };
 use sqlx::SqlitePool;
 use serde_json;
@@ -182,6 +188,224 @@ impl StyleAnalyzer {
 
         // 执行分析
         self.analyze_vocabulary_and_sentence(task_id, &text).await
+    }
+
+    /// 执行修辞层和叙事层分析（追加到词汇/句式分析之后）
+    pub async fn analyze_rhetoric_and_narrative(
+        &self,
+        task_id: &str,
+        text: &str,
+    ) -> Result<(RhetoricAnalysisResult, NarrativeAnalysisResult), AppError> {
+        // Step 3: 执行修辞层分析
+        let rhetoric_result = if self.config.use_chunked {
+            extract_rhetoric_features_chunked(text, self.config.chunk_size)
+        } else {
+            extract_rhetoric_features(text)
+        };
+
+        // 更新进度到 37.5%
+        self.update_task_progress(task_id, 0.375, "rhetoric_completed", "修辞层分析完成").await?;
+
+        // 保存修辞分析结果
+        self.save_rhetoric_result(task_id, &rhetoric_result).await?;
+
+        // Step 4: 执行叙事层分析
+        let narrative_result = if self.config.use_chunked {
+            extract_narrative_features_chunked(text, self.config.chunk_size)
+        } else {
+            extract_narrative_features(text)
+        };
+
+        // 更新进度到 50%
+        self.update_task_progress(task_id, 0.50, "narrative_completed", "叙事层分析完成").await?;
+
+        // 保存叙事分析结果
+        self.save_narrative_result(task_id, &narrative_result).await?;
+
+        Ok((rhetoric_result, narrative_result))
+    }
+
+    /// 保存修辞分析结果
+    async fn save_rhetoric_result(
+        &self,
+        task_id: &str,
+        result: &RhetoricAnalysisResult,
+    ) -> Result<(), AppError> {
+        let json = serde_json::to_string(result).map_err(|e| {
+            AppError::serialization_error(format!("修辞分析结果序列化失败：{}", e))
+        })?;
+
+        sqlx::query(
+            r#"
+            UPDATE style_analysis_tasks
+            SET rhetoric_json = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            "#,
+        )
+        .bind(json)
+        .bind(task_id)
+        .execute(&self.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to save rhetoric result: {}", e);
+            AppError::internal(format!("保存修辞分析结果失败：{}", e))
+        })?;
+
+        Ok(())
+    }
+
+    /// 保存叙事分析结果
+    async fn save_narrative_result(
+        &self,
+        task_id: &str,
+        result: &NarrativeAnalysisResult,
+    ) -> Result<(), AppError> {
+        let json = serde_json::to_string(result).map_err(|e| {
+            AppError::serialization_error(format!("叙事分析结果序列化失败：{}", e))
+        })?;
+
+        sqlx::query(
+            r#"
+            UPDATE style_analysis_tasks
+            SET narrative_json = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            "#,
+        )
+        .bind(json)
+        .bind(task_id)
+        .execute(&self.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to save narrative result: {}", e);
+            AppError::internal(format!("保存叙事分析结果失败：{}", e))
+        })?;
+
+        Ok(())
+    }
+
+    /// 执行情感层和节奏层分析（追加到修辞/叙事分析之后）
+    pub async fn analyze_emotion_and_pacing(
+        &self,
+        task_id: &str,
+        text: &str,
+        chapters: &[&str],
+    ) -> Result<(EmotionAnalysisResult, PacingAnalysisResult), AppError> {
+        // Step 5: 执行情感层分析
+        let emotion_result = if self.config.use_chunked {
+            extract_emotion_features_chunked(text, self.config.chunk_size)
+        } else {
+            extract_emotion_features(text)
+        };
+
+        // 更新进度到 62.5%
+        self.update_task_progress(task_id, 0.625, "emotion_completed", "情感层分析完成").await?;
+
+        // 保存情感分析结果
+        self.save_emotion_result(task_id, &emotion_result).await?;
+
+        // Step 6: 执行节奏层分析
+        let pacing_result = if self.config.use_chunked {
+            extract_pacing_features_chunked(text, chapters, self.config.chunk_size)
+        } else {
+            extract_pacing_features(text, chapters)
+        };
+
+        // 更新进度到 75%
+        self.update_task_progress(task_id, 0.75, "pacing_completed", "节奏层分析完成").await?;
+
+        // 保存节奏分析结果
+        self.save_pacing_result(task_id, &pacing_result).await?;
+
+        Ok((emotion_result, pacing_result))
+    }
+
+    /// 保存情感分析结果
+    async fn save_emotion_result(
+        &self,
+        task_id: &str,
+        result: &EmotionAnalysisResult,
+    ) -> Result<(), AppError> {
+        let json = serde_json::to_string(result).map_err(|e| {
+            AppError::serialization_error(format!("情感分析结果序列化失败：{}", e))
+        })?;
+
+        sqlx::query(
+            r#"
+            UPDATE style_analysis_tasks
+            SET emotion_json = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            "#,
+        )
+        .bind(json)
+        .bind(task_id)
+        .execute(&self.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to save emotion result: {}", e);
+            AppError::internal(format!("保存情感分析结果失败：{}", e))
+        })?;
+
+        Ok(())
+    }
+
+    /// 保存节奏分析结果
+    async fn save_pacing_result(
+        &self,
+        task_id: &str,
+        result: &PacingAnalysisResult,
+    ) -> Result<(), AppError> {
+        let json = serde_json::to_string(result).map_err(|e| {
+            AppError::serialization_error(format!("节奏分析结果序列化失败：{}", e))
+        })?;
+
+        sqlx::query(
+            r#"
+            UPDATE style_analysis_tasks
+            SET pacing_json = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            "#,
+        )
+        .bind(json)
+        .bind(task_id)
+        .execute(&self.db)
+        .await
+        .map_err(|e| {
+            tracing::error!("Failed to save pacing result: {}", e);
+            AppError::internal(format!("保存节奏分析结果失败：{}", e))
+        })?;
+
+        Ok(())
+    }
+
+    /// 完整的六层分析流程（词汇、句式、修辞、叙事、情感、节奏）
+    pub async fn analyze_all_layers(
+        &self,
+        task_id: &str,
+        file_path: &str,
+    ) -> Result<(), AppError> {
+        // 读取文件内容
+        let text = tokio::fs::read_to_string(file_path)
+            .await
+            .map_err(|e| {
+                tracing::error!("Failed to read file {}: {}", file_path, e);
+                AppError::file_io_error(format!("读取文件失败：{}", e))
+            })?;
+
+        // 执行词汇层和句式层分析
+        self.analyze_vocabulary_and_sentence(task_id, &text).await?;
+
+        // 执行修辞层和叙事层分析
+        self.analyze_rhetoric_and_narrative(task_id, &text).await?;
+
+        // 执行情感层和节奏层分析
+        // 简单按章节分割：按空行分块作为"章节"
+        let chapters: Vec<&str> = text.split("\n\n").filter(|s| !s.is_empty()).collect();
+        self.analyze_emotion_and_pacing(task_id, &text, &chapters).await?;
+
+        // 标记为完成（75% 是当前的完整进度，后续还有对话层、描写层）
+        self.update_task_progress(task_id, 0.75, "completed", "六层分析完成").await?;
+
+        Ok(())
     }
 }
 
