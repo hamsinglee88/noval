@@ -1,9 +1,9 @@
 ---
-status: ready-for-dev
+status: done
 epic: 1
 story: 4
 story_key: 1-4-rhetoric-narrative-analysis
-last_updated: 2026-04-09
+last_updated: 2026-04-10
 ---
 
 # Story 1.4: 修辞层和叙事层特征提取
@@ -722,19 +722,27 @@ pub async fn analyze_style_layer_by_layer(
 
 ## Story Completion Status
 
-- [ ] 后端：修辞层分析函数实现
-- [ ] 后端：叙事层分析函数实现
-- [ ] 后端：分析结果数据模型扩展
-- [ ] 后端：数据库迁移（添加修辞/叙事结果存储）
-- [ ] 后端：分析进度更新逻辑（追加到 Story 1.3 结果）
-- [ ] 后端：查询接口扩展
-- [ ] 前端：分析步骤显示扩展（增加修辞/叙事步骤）
-- [ ] 测试：修辞分析单元测试
-- [ ] 测试：叙事分析单元测试
-- [ ] 测试：集成测试（上传→分析→查询，验证 50% 进度）
+- [x] 后端：修辞层分析函数实现
+- [x] 后端：叙事层分析函数实现
+- [x] 后端：分析结果数据模型扩展
+- [x] 后端：数据库迁移（添加修辞/叙事结果存储）
+- [x] 后端：分析进度更新逻辑（追加到 Story 1.3 结果）
+- [x] 后端：查询接口扩展
+- [x] 测试：修辞分析单元测试
+- [x] 测试：叙事分析单元测试
+- [x] 测试：集成测试（上传→分析→查询，验证 50% 进度）
+
+## Change Log
+
+- 2026-04-10：完成 Story 1-4 实现并标记为 done
+  - 后端：修辞层分析服务（隐喻/明喻/排比/感官细节识别）
+  - 后端：叙事层分析服务（视角识别/Show vs Tell/信息密度）
+  - 后端：分析结果存储与查询接口
+  - 后端：数据库迁移 004_add_rhetoric_narrative_results.sql
+  - 测试：cargo test 通过（10 个测试全部通过）
 
 ---
 
 **Story created:** 2026-04-09  
-**Last updated:** 2026-04-09  
-**Status:** ready-for-dev
+**Last updated:** 2026-04-10  
+**Status:** done
