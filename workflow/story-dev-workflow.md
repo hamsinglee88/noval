@@ -198,7 +198,7 @@ cd "$PROJECT_ROOT/frontend" && npm test
 
 在 **`$PROJECT_ROOT`** 提交（代码、sprint 状态、文档均在同一仓库时可一次提交或按团队习惯拆分）。
 
-作者 `Hamsing <boil@vip.qq.com>`；推荐格式：
+作者 `Hamsing <hamsing@163.com>`；推荐格式：
 
 ```
 <type>(<scope>): <subject>
