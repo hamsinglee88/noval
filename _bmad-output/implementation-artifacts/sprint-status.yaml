@@ -60,17 +60,17 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: 创作编辑器核心功能
-  epic-2: backlog
-  2-1-vscode-layout: backlog
-  2-2-tiptap-editor: backlog
-  2-3-chapter-crud: backlog
-  2-4-auto-save: backlog
-  2-5-version-history: backlog
-  2-6-version-rollback: backlog
-  2-7-export-txt-epub: backlog
-  2-8-dark-theme: backlog
-  2-9-flow-mode: backlog
-  2-10-status-bar: backlog
+  epic-2: in-progress
+  2-1-vscode-layout: ready-for-dev
+  2-2-tiptap-editor: ready-for-dev
+  2-3-chapter-crud: ready-for-dev
+  2-4-auto-save: ready-for-dev
+  2-5-version-history: ready-for-dev
+  2-6-version-rollback: ready-for-dev
+  2-7-export-txt-epub: ready-for-dev
+  2-8-dark-theme: ready-for-dev
+  2-9-flow-mode: ready-for-dev
+  2-10-status-bar: ready-for-dev
   epic-2-retrospective: optional
 
   # Epic 3: AI 辅助生成
