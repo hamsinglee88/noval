@@ -60,9 +60,18 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: 创作编辑器核心功能
-  epic-2: in-progress
-  2-1-vscode-layout: ready-for-dev
-  2-2-tiptap-editor: ready-for-dev
+  epic-2: done
+  2-1-vscode-layout: done
+  2-2-tiptap-editor: done
+  2-3-chapter-crud: done
+  2-4-auto-save: done
+  2-5-version-history: done
+  2-6-version-rollback: done
+  2-7-export: done
+  2-8-dark-theme: done
+  2-9-flow-mode: done
+  2-10-status-bar: done
+  epic-2-retrospective: optional
   2-3-chapter-crud: ready-for-dev
   2-4-auto-save: ready-for-dev
   2-5-version-history: ready-for-dev
