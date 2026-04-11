@@ -44,7 +44,7 @@ story_location: implementation-artifacts
 
 development_status:
   # Epic 1: 项目初始化与风格管理
-  epic-1: in-progress
+  epic-1: done
   1-1-user-registration: done
   1-2-novel-upload-analysis: done
   1-3-vocabulary-sentence-analysis: done
@@ -53,10 +53,10 @@ development_status:
   1-6-dialogue-description-analysis: done
   1-7-style-vector-generation: done
   1-8-style-report-display: done
-  1-9-style-profile-management: ready-for-dev
+  1-9-style-profile-management: done
   1-10-project-creation: done
-  1-11-style-mixing: ready-for-dev
-  1-12-style-similarity: ready-for-dev
+  1-11-style-mixing: done
+  1-12-style-similarity: done
   epic-1-retrospective: optional
 
   # Epic 2: 创作编辑器核心功能
