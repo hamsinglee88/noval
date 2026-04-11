@@ -10,3 +10,6 @@ pub mod export;
 pub mod ai;
 pub mod websocket;
 pub mod foreshadowing;
+pub mod foreshadowing_update;
+pub mod scan;
+pub mod llm_config;

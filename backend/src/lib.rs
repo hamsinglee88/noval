@@ -31,5 +31,9 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/ai/rewrite", post(ai::rewrite_text))
         .route("/api/projects/{novel_id}/foreshadows", get(foreshadowing::list_foreshadows))
         .route("/api/projects/{novel_id}/chapters/{chapter_id}/detect-foreshadows", post(foreshadowing::detect_chapter_foreshadows))
+        .route("/api/llm/configs", get(llm_config::list_llm_configs))
+        .route("/api/llm/configs", post(llm_config::create_llm_config))
+        .route("/api/llm/configs/{id}", put(llm_config::update_llm_config))
+        .route("/api/llm/configs/{id}", delete(llm_config::delete_llm_config))
         .with_state(state).layer(cors)
 }
