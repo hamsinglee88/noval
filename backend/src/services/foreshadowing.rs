@@ -104,23 +104,23 @@ pub fn detect_foreshadows(text: &str, chapter_id: &str) -> DetectionResult {
 /// 计算伏笔置信度
 pub fn calculate_confidence(text: &str) -> f64 {
     let indicators = [
-        ("也许", 0.1),
-        ("或许", 0.1),
-        ("将来", 0.15),
-        ("以后", 0.1),
-        ("记住", 0.15),
-        ("承诺", 0.2),
-        ("誓言", 0.25),
-        ("预言", 0.2),
-        ("秘密", 0.15),
+        ("也许", 0.1_f64),
+        ("或许", 0.1_f64),
+        ("将来", 0.15_f64),
+        ("以后", 0.1_f64),
+        ("记住", 0.15_f64),
+        ("承诺", 0.2_f64),
+        ("誓言", 0.25_f64),
+        ("预言", 0.2_f64),
+        ("秘密", 0.15_f64),
     ];
     
-    let mut score = 0.0;
+    let mut score: f64 = 0.0;
     for (keyword, weight) in &indicators {
         if text.contains(keyword) {
             score += weight;
         }
     }
     
-    score.min(1.0)
+    score.min(1.0_f64)
 }
