@@ -9,3 +9,4 @@ pub mod versions;
 pub mod export;
 pub mod ai;
 pub mod websocket;
+pub mod foreshadowing;

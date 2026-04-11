@@ -29,5 +29,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/ai/expand", post(ai::expand_text))
         .route("/api/ai/summarize", post(ai::summarize_text))
         .route("/api/ai/rewrite", post(ai::rewrite_text))
+        .route("/api/projects/{novel_id}/foreshadows", get(foreshadowing::list_foreshadows))
+        .route("/api/projects/{novel_id}/chapters/{chapter_id}/detect-foreshadows", post(foreshadowing::detect_chapter_foreshadows))
         .with_state(state).layer(cors)
 }

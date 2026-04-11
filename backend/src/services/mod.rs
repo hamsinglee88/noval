@@ -4,3 +4,4 @@ pub mod style_upload_service;
 pub mod llm_router;
 pub mod style_constraint;
 pub mod style_matcher;
+pub mod foreshadowing;
