@@ -1,5 +1,5 @@
 use axum::{
-    extract::ws::{WebSocket, WebSocketUpgrade},
+    extract::ws::{WebSocket, WebSocketUpgrade, Message},
     response::IntoResponse,
 };
 use futures::{StreamExt, SinkExt};
@@ -12,12 +12,12 @@ async fn handle_socket(mut socket: WebSocket) {
     while let Some(msg) = socket.recv().await {
         if let Ok(msg) = msg {
             match msg {
-                axum::extract::ws::Message::Text(text) => {
+                Message::Text(text) => {
                     // 处理消息并推送进度
                     let response = format!("{{\"type\":\"progress\",\"data\":\"处理中...\"}}");
-                    let _ = socket.send(axum::extract::ws::Message::Text(response)).await;
+                    let _ = socket.send(Message::Text(response.into())).await;
                 }
-                axum::extract::ws::Message::Close(_) => break,
+                Message::Close(_) => break,
                 _ => {}
             }
         }
