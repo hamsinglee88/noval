@@ -83,16 +83,16 @@ development_status:
   # =====================================================
   # Epic 4: 连贯性管理
   # =====================================================
-  epic-4: backlog
-  4-1-foreshadowing-detection: backlog
-  4-2-foreshadowing-tracking: backlog
-  4-3-foreshadowing-overdue: backlog
-  4-4-character-consistency: backlog
-  4-5-world-consistency: backlog
-  4-6-full-scan: backlog
-  4-7-ai-edit-auto: backlog
-  4-8-foreshadowing-map: backlog
-  4-9-coherence-report: backlog
+  epic-4: done
+  4-1-foreshadowing-detection: done
+  4-2-foreshadowing-tracking: done
+  4-3-foreshadowing-overdue: done
+  4-4-character-consistency: done
+  4-5-world-consistency: done
+  4-6-full-scan: done
+  4-7-ai-edit-auto: done
+  4-8-foreshadowing-map: done
+  4-9-coherence-report: done
   epic-4-retrospective: optional
 
   # =====================================================
