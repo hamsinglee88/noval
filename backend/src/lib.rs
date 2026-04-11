@@ -35,11 +35,5 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/llm/configs", post(llm_config::create_llm_config))
         .route("/api/llm/configs/{id}", put(llm_config::update_llm_config))
         .route("/api/llm/configs/{id}", delete(llm_config::delete_llm_config))
-        .route("/api/llm/stats", get(llm_stats::get_llm_stats))
-        .route("/api/stats/writing", get(writing_stats::get_writing_stats))
-        .route("/api/user/preferences", get(user_preferences::get_preferences))
-        .route("/api/user/preferences", put(user_preferences::update_preferences))
-        .route("/api/storage/info", get(storage::get_storage_info))
-        .route("/api/storage/cleanup", post(storage::cleanup_old_data))
         .with_state(state).layer(cors)
 }
