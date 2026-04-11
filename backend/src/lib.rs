@@ -41,6 +41,8 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/projects/{novel_id}/chapters/{chapter_id}", get(chapters::get_chapter))
         .route("/api/projects/{novel_id}/chapters/{chapter_id}", put(chapters::update_chapter))
         .route("/api/projects/{novel_id}/chapters/{chapter_id}", delete(chapters::delete_chapter))
+        .route("/api/projects/{novel_id}/chapters/{chapter_id}/versions", get(versions::list_versions))
+        .route("/api/projects/{novel_id}/chapters/{chapter_id}/versions/{version_id}", get(versions::get_version))
         .route("/api/styles/mix/preview", post(style_mixing::preview_mix))
         .route("/api/styles/mix/save", post(style_mixing::save_mixed_style))
         .route("/api/styles/similar", get(style_similarity::find_similar))
