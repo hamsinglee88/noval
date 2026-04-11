@@ -32,7 +32,10 @@ describe('auth flow e2e', () => {
     expect(route).toBe('/projects');
     expect(store.isAuthenticated).toBe(true);
     expect(store.user?.username).toBe('writer123');
-    expect(localStorage.getItem('noval-auth-session')).toContain('token-1');
+    // 验证加密的会话数据已存储（使用 AES 加密）
+    const storedSession = localStorage.getItem('noval-auth-session');
+    expect(storedSession).toBeTruthy();
+    expect(storedSession).toContain('U2FsdGVkX1'); // AES 加密的标识
   });
 
   it('should handle login failure', async () => {
