@@ -21,7 +21,13 @@ pub fn create_router(state: AppState) -> Router {
         .route("/api/projects/{novel_id}/chapters/{chapter_id}/versions", get(versions::list_versions))
         .route("/api/projects/{novel_id}/chapters/{chapter_id}/versions/{version_id}", get(versions::get_version))
         .route("/api/projects/{novel_id}/chapters/{chapter_id}/versions/{version_id}/rollback", post(versions::rollback_version))
+        .route("/api/projects/{novel_id}/export", get(export::export_novel))
         .route("/api/styles/mix/preview", post(style_mixing::preview_mix)).route("/api/styles/mix/save", post(style_mixing::save_mixed_style))
         .route("/api/styles/similar", get(style_similarity::find_similar))
+        .route("/api/ai/continue", post(ai::continue_text))
+        .route("/api/ai/polish", post(ai::polish_text))
+        .route("/api/ai/expand", post(ai::expand_text))
+        .route("/api/ai/summarize", post(ai::summarize_text))
+        .route("/api/ai/rewrite", post(ai::rewrite_text))
         .with_state(state).layer(cors)
 }
