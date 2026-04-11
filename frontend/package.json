@@ -9,6 +9,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@tiptap/extension-character-count": "^3.22.3",
+    "@tiptap/extension-placeholder": "^3.22.3",
+    "@tiptap/starter-kit": "^3.22.3",
+    "@tiptap/vue-3": "^3.22.3",
     "axios": "^1.12.2",
     "chart.js": "^4.5.1",
     "crypto-js": "^4.2.0",
