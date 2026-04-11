@@ -1,18 +1,6 @@
-use axum::{
-    Json,
-    extract::{State, Path},
-    http::{HeaderMap, header},
-};
+use axum::{Json, extract::{State, Path}, http::HeaderMap};
 use serde::{Deserialize, Serialize};
-
-use crate::{
-    app_state::AppState,
-    errors::AppError,
-    services::foreshadowing::{detect_foreshadows, Foreshadow, ForeshadowStatus},
-};
-
-#[derive(Debug, Serialize)]
-pub struct ApiSuccess<T> { pub success: bool, pub data: T }
+use crate::{app_state::AppState, errors::AppError, auth_utils::{get_user_id_from_token, verify_novel_ownership, ApiSuccess}, services::foreshadowing::{detect_foreshadows, Foreshadow, ForeshadowStatus}};
 
 #[derive(Debug, Deserialize)]
 pub struct DetectRequest {
@@ -41,7 +29,8 @@ pub async fn detect_chapter_foreshadows(
     headers: HeaderMap,
     Path((novel_id, chapter_id)): Path<(String, String)>,
 ) -> Result<Json<ApiSuccess<DetectResponse>>, AppError> {
-    let _user_id = get_user_id_from_token(&state.db, &headers).await?;
+    let user_id = get_user_id_from_token(&state.db, &headers).await?;
+    verify_novel_ownership(&state.db, &user_id, &novel_id).await?;
 
     // 获取章节内容
     let chapter: (String,) = sqlx::query_as(
@@ -60,7 +49,12 @@ pub async fn detect_chapter_foreshadows(
     // 检测伏笔
     let result = detect_foreshadows(&chapter.0, &chapter_id);
 
-    // 保存检测到的伏笔到数据库
+    // 使用事务批量保存伏笔
+    let mut tx = state.db.begin().await.map_err(|e| {
+        tracing::error!("Failed to start transaction: {}", e);
+        AppError::internal("数据库事务失败")
+    })?;
+
     for foreshadow in &result.foreshadows {
         sqlx::query(
             r#"
@@ -76,30 +70,37 @@ pub async fn detect_chapter_foreshadows(
         .bind(format!("{:?}", foreshadow.status))
         .bind(foreshadow.confidence_score)
         .bind(&foreshadow.created_at)
-        .execute(&state.db)
+        .execute(&mut *tx)
         .await
-        .ok();
+        .map_err(|e| {
+            tracing::error!("Failed to save foreshadow: {}", e);
+            AppError::internal("保存伏笔失败")
+        })?;
     }
 
-    Ok(Json(ApiSuccess {
-        success: true,
-        data: DetectResponse {
-            foreshadows: result.foreshadows,
-            count: result.count,
-        },
-    }))
+    tx.commit().await.map_err(|e| {
+        tracing::error!("Failed to commit transaction: {}", e);
+        AppError::internal("提交事务失败")
+    })?;
+
+    Ok(Json(ApiSuccess::ok(DetectResponse {
+        foreshadows: result.foreshadows,
+        count: result.count,
+    })))
 }
 
-/// 获取小说所有伏笔
+/// 获取小说所有伏笔（分页）
 pub async fn list_foreshadows(
     State(state): State<AppState>,
     headers: HeaderMap,
     Path(novel_id): Path<String>,
 ) -> Result<Json<ApiSuccess<Vec<ForeshadowSummary>>>, AppError> {
-    let _user_id = get_user_id_from_token(&state.db, &headers).await?;
+    let user_id = get_user_id_from_token(&state.db, &headers).await?;
+    verify_novel_ownership(&state.db, &user_id, &novel_id).await?;
 
+    // TODO: 添加分页参数
     let foreshadows: Vec<(String, String, String, String, String, f64)> = sqlx::query_as(
-        "SELECT id, content, chapter_id, foreshadow_type, status, confidence_score FROM foreshadows WHERE novel_id = ? ORDER BY created_at DESC"
+        "SELECT id, content, chapter_id, foreshadow_type, status, confidence_score FROM foreshadows WHERE novel_id = ? ORDER BY created_at DESC LIMIT 100"
     )
     .bind(&novel_id)
     .fetch_all(&state.db)
@@ -120,26 +121,5 @@ pub async fn list_foreshadows(
         }
     }).collect();
 
-    Ok(Json(ApiSuccess {
-        success: true,
-        data: summaries,
-    }))
-}
-
-async fn get_user_id_from_token(db: &sqlx::SqlitePool, headers: &HeaderMap) -> Result<String, AppError> {
-    let token = bearer_token(headers)?;
-    let user: (String,) = sqlx::query_as("SELECT id FROM users WHERE session_token = ? AND session_expires_at > datetime('now')")
-        .bind(&token).fetch_optional(db).await?
-        .ok_or_else(|| AppError::unauthorized("SESSION_EXPIRED", "登录状态已失效"))?;
-    Ok(user.0)
-}
-
-fn bearer_token(headers: &HeaderMap) -> Result<String, AppError> {
-    let value = headers.get(header::AUTHORIZATION)
-        .ok_or_else(|| AppError::unauthorized("MISSING_SESSION", "缺少登录凭证"))?;
-    let value = value.to_str()
-        .map_err(|_| AppError::unauthorized("INVALID_SESSION", "登录凭证格式无效"))?;
-    value.strip_prefix("Bearer ")
-        .map(ToOwned::to_owned)
-        .ok_or_else(|| AppError::unauthorized("INVALID_SESSION", "登录凭证格式无效"))
+    Ok(Json(ApiSuccess::ok(summaries)))
 }

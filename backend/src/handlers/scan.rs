@@ -1,8 +1,6 @@
-use axum::{Json, extract::{State, Path}, http::{HeaderMap, header}};
+use axum::{Json, extract::{State, Path}, http::HeaderMap};
 use serde::Serialize;
-use crate::{app_state::AppState, errors::AppError};
-
-#[derive(Debug, Serialize)] pub struct ApiSuccess<T> { pub success: bool, pub data: T }
+use crate::{app_state::AppState, errors::AppError, auth_utils::{get_user_id_from_token, verify_novel_ownership, ApiSuccess}};
 
 #[derive(Debug, Serialize)]
 pub struct ScanResult {
@@ -19,18 +17,7 @@ pub async fn full_scan(
     Path(novel_id): Path<String>,
 ) -> Result<Json<ApiSuccess<ScanResult>>, AppError> {
     let user_id = get_user_id_from_token(&state.db, &headers).await?;
-    
-    // 验证用户拥有该小说
-    let novel_owner: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM novels WHERE id = ? AND user_id = ?")
-        .bind(&novel_id)
-        .bind(&user_id)
-        .fetch_one(&state.db)
-        .await
-        .map_err(|e| { tracing::error!("{}", e); AppError::internal("验证权限失败") })?;
-    
-    if novel_owner.0 == 0 {
-        return Err(AppError::not_found("NOVEL_NOT_FOUND", "小说不存在或无权访问"));
-    }
+    verify_novel_ownership(&state.db, &user_id, &novel_id).await?;
     
     // 获取章节数
     let chapter_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM chapters WHERE novel_id = ?")
@@ -53,7 +40,7 @@ pub async fn full_scan(
         .await
         .map_err(|e| { tracing::error!("{}", e); AppError::internal("获取逾期伏笔数失败") })?;
     
-    // 计算一致性评分（简化版）
+    // 计算一致性评分
     let consistency_score = if foreshadow_count.0 > 0 {
         1.0 - (overdue_count.0 as f64 / foreshadow_count.0 as f64 * 0.5)
     } else {
@@ -66,31 +53,11 @@ pub async fn full_scan(
         vec![]
     };
     
-    Ok(Json(ApiSuccess {
-        success: true,
-        data: ScanResult {
-            total_chapters: chapter_count.0 as usize,
-            foreshadow_count: foreshadow_count.0 as usize,
-            overdue_count: overdue_count.0 as usize,
-            consistency_score,
-            issues,
-        },
-    }))
-}
-
-async fn get_user_id_from_token(db: &sqlx::SqlitePool, headers: &HeaderMap) -> Result<String, AppError> {
-    let token = headers.get(header::AUTHORIZATION)
-        .ok_or_else(|| AppError::unauthorized("MISSING_SESSION", "缺少登录凭证"))?
-        .to_str()
-        .map_err(|_| AppError::unauthorized("INVALID_SESSION", "登录凭证格式无效"))?
-        .strip_prefix("Bearer ")
-        .ok_or_else(|| AppError::unauthorized("INVALID_SESSION", "登录凭证格式无效"))?;
-    
-    let user: (String,) = sqlx::query_as("SELECT id FROM users WHERE session_token = ? AND session_expires_at > datetime('now')")
-        .bind(token)
-        .fetch_optional(db)
-        .await?
-        .ok_or_else(|| AppError::unauthorized("SESSION_EXPIRED", "登录状态已失效"))?;
-    
-    Ok(user.0)
+    Ok(Json(ApiSuccess::ok(ScanResult {
+        total_chapters: chapter_count.0 as usize,
+        foreshadow_count: foreshadow_count.0 as usize,
+        overdue_count: overdue_count.0 as usize,
+        consistency_score,
+        issues,
+    })))
 }

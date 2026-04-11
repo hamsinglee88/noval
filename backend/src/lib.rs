@@ -1,4 +1,4 @@
-pub mod app_state; pub mod db; pub mod errors; pub mod handlers; pub mod models; pub mod services; pub mod validation;
+pub mod app_state; pub mod auth_utils; pub mod db; pub mod errors; pub mod handlers; pub mod models; pub mod services; pub mod validation;
 use axum::{Router, routing::{get, post, put, delete}};
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use crate::{app_state::AppState, handlers::*};
