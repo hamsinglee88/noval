@@ -24,6 +24,28 @@ pub struct CreateLLMConfigRequest {
     pub temperature: Option<f64>,
 }
 
+impl CreateLLMConfigRequest {
+    pub fn validate(&self) -> Result<(), AppError> {
+        if self.provider.is_empty() {
+            return Err(AppError::bad_request("INVALID_PROVIDER", "提供商不能为空"));
+        }
+        if self.model.is_empty() {
+            return Err(AppError::bad_request("INVALID_MODEL", "模型不能为空"));
+        }
+        if let Some(temp) = self.temperature {
+            if temp < 0.0 || temp > 2.0 {
+                return Err(AppError::bad_request("INVALID_TEMPERATURE", "温度必须在 0-2 之间"));
+            }
+        }
+        if let Some(tokens) = self.max_tokens {
+            if tokens < 1 || tokens > 100000 {
+                return Err(AppError::bad_request("INVALID_MAX_TOKENS", "最大 Tokens 必须在 1-100000 之间"));
+            }
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct UpdateLLMConfigRequest {
     pub model: Option<String>,
@@ -75,6 +97,7 @@ pub async fn create_llm_config(
     Json(req): Json<CreateLLMConfigRequest>,
 ) -> Result<Json<ApiSuccess<LLMConfigResponse>>, AppError> {
     let user_id = get_user_id_from_token(&state.db, &headers).await?;
+    req.validate()?;
 
     let config_id = uuid::Uuid::new_v4().to_string();
     let is_default = req.is_default.unwrap_or(false);
