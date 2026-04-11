@@ -98,10 +98,10 @@ development_status:
   # =====================================================
   # Epic 5: 系统管理与统计
   # =====================================================
-  epic-5: backlog
-  5-1-llm-routing-config: backlog
-  5-2-llm-statistics: backlog
-  5-3-writing-statistics: backlog
-  5-4-user-preferences: backlog
-  5-5-storage-management: backlog
+  epic-5: done
+  5-1-llm-routing-config: done
+  5-2-llm-statistics: done
+  5-3-writing-statistics: done
+  5-4-user-preferences: done
+  5-5-storage-management: done
   epic-5-retrospective: optional
