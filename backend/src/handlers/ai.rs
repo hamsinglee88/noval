@@ -18,6 +18,18 @@ pub struct AIRequest {
     pub style_id: Option<String>,
 }
 
+impl AIRequest {
+    pub fn validate(&self) -> Result<(), AppError> {
+        if self.text.trim().is_empty() {
+            return Err(AppError::bad_request("EMPTY_TEXT", "文本不能为空"));
+        }
+        if self.text.len() > 50_000 {
+            return Err(AppError::bad_request("TEXT_TOO_LONG", "文本长度超出限制（最大50000字符）"));
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Serialize)]
 pub struct AIResponse {
     pub result: String,
@@ -38,19 +50,14 @@ pub async fn continue_text(
     Json(req): Json<AIRequest>,
 ) -> Result<Json<ApiSuccess<AIResponse>>, AppError> {
     let _user_id = get_user_id_from_token(&state.db, &headers).await?;
+    req.validate()?;
 
-    // 构建提示词
     let prompt = build_continue_prompt(&req.text, req.context.as_deref());
-
-    // 调用 LLM（这里简化处理，实际应该调用配置的 LLM）
     let result = call_llm(&prompt, req.style_id.as_deref()).await?;
 
     Ok(Json(ApiSuccess {
         success: true,
-        data: AIResponse {
-            result,
-            usage: None,
-        },
+        data: AIResponse { result, usage: None },
     }))
 }
 
@@ -61,16 +68,14 @@ pub async fn polish_text(
     Json(req): Json<AIRequest>,
 ) -> Result<Json<ApiSuccess<AIResponse>>, AppError> {
     let _user_id = get_user_id_from_token(&state.db, &headers).await?;
+    req.validate()?;
 
     let prompt = build_polish_prompt(&req.text, req.context.as_deref());
     let result = call_llm(&prompt, req.style_id.as_deref()).await?;
 
     Ok(Json(ApiSuccess {
         success: true,
-        data: AIResponse {
-            result,
-            usage: None,
-        },
+        data: AIResponse { result, usage: None },
     }))
 }
 
@@ -81,16 +86,14 @@ pub async fn expand_text(
     Json(req): Json<AIRequest>,
 ) -> Result<Json<ApiSuccess<AIResponse>>, AppError> {
     let _user_id = get_user_id_from_token(&state.db, &headers).await?;
+    req.validate()?;
 
     let prompt = build_expand_prompt(&req.text, req.context.as_deref());
     let result = call_llm(&prompt, req.style_id.as_deref()).await?;
 
     Ok(Json(ApiSuccess {
         success: true,
-        data: AIResponse {
-            result,
-            usage: None,
-        },
+        data: AIResponse { result, usage: None },
     }))
 }
 
@@ -101,16 +104,14 @@ pub async fn summarize_text(
     Json(req): Json<AIRequest>,
 ) -> Result<Json<ApiSuccess<AIResponse>>, AppError> {
     let _user_id = get_user_id_from_token(&state.db, &headers).await?;
+    req.validate()?;
 
     let prompt = build_summarize_prompt(&req.text);
     let result = call_llm(&prompt, None).await?;
 
     Ok(Json(ApiSuccess {
         success: true,
-        data: AIResponse {
-            result,
-            usage: None,
-        },
+        data: AIResponse { result, usage: None },
     }))
 }
 
@@ -121,16 +122,14 @@ pub async fn rewrite_text(
     Json(req): Json<AIRequest>,
 ) -> Result<Json<ApiSuccess<AIResponse>>, AppError> {
     let _user_id = get_user_id_from_token(&state.db, &headers).await?;
+    req.validate()?;
 
     let prompt = build_rewrite_prompt(&req.text, req.context.as_deref());
     let result = call_llm(&prompt, req.style_id.as_deref()).await?;
 
     Ok(Json(ApiSuccess {
         success: true,
-        data: AIResponse {
-            result,
-            usage: None,
-        },
+        data: AIResponse { result, usage: None },
     }))
 }
 

@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { config } from '@/config'
 
 export interface AIRequest {
   action: 'continue' | 'polish' | 'expand' | 'summarize' | 'rewrite'
@@ -34,7 +35,7 @@ api.interceptors.request.use(config => {
   if (session) {
     try {
       const CryptoJS = require('crypto-js')
-      const decrypted = CryptoJS.AES.decrypt(session, 'noval-secret-key').toString(CryptoJS.enc.Utf8)
+      const decrypted = CryptoJS.AES.decrypt(session, config.encryptionKey).toString(CryptoJS.enc.Utf8)
       const data = JSON.parse(decrypted)
       config.headers.Authorization = `Bearer ${data.token}`
     } catch (e) {
@@ -126,7 +127,7 @@ function getToken(): string {
   
   try {
     const CryptoJS = require('crypto-js')
-    const decrypted = CryptoJS.AES.decrypt(session, 'noval-secret-key').toString(CryptoJS.enc.Utf8)
+    const decrypted = CryptoJS.AES.decrypt(session, config.encryptionKey).toString(CryptoJS.enc.Utf8)
     const data = JSON.parse(decrypted)
     return data.token || ''
   } catch {

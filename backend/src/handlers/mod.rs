@@ -8,3 +8,4 @@ pub mod chapters;
 pub mod versions;
 pub mod export;
 pub mod ai;
+pub mod websocket;
