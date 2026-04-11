@@ -13,3 +13,7 @@ pub mod foreshadowing;
 pub mod foreshadowing_update;
 pub mod scan;
 pub mod llm_config;
+pub mod llm_stats;
+pub mod writing_stats;
+pub mod user_preferences;
+pub mod storage;
